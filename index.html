@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>CAELUM AUREUM · 金色天城</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#070a10;
+    font-family:"Optima","Palatino Linotype","Georgia","Songti SC","SimSun",serif;
+    -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+  canvas{display:block;touch-action:none;filter:saturate(1.16) contrast(1.08) brightness(1.02)}
+  #vig{position:fixed;inset:0;pointer-events:none;z-index:6;
+    background:radial-gradient(ellipse 78% 66% at 50% 44%,rgba(0,0,0,0) 40%,rgba(12,16,26,.20) 76%,rgba(6,9,16,.52) 100%)}
+
+  /* ── 主 UI ───────────────────────────── */
+  #ui{position:fixed;inset:0;pointer-events:none;z-index:10}
+  #ui .panel{pointer-events:auto}
+
+  .brand{position:absolute;left:34px;top:26px;opacity:0;animation:fadeUp 1.6s .5s forwards}
+  .brand h1{
+    font-size:26px;font-weight:400;letter-spacing:.42em;
+    background:linear-gradient(178deg,#fbf1d6 0%,#e8c982 38%,#b8873a 72%,#f6e2ae 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 2px 10px rgba(0,0,0,.55));line-height:1.1}
+  .brand .sub{margin-top:9px;font-size:10.5px;letter-spacing:.34em}
+  .brand .sub{color:rgba(206,186,150,.72)}
+  .brand .rule{margin-top:11px;width:112px;height:1px;
+    background:linear-gradient(90deg,rgba(216,169,78,.85),rgba(216,169,78,0))}
+  .brand .cn{margin-top:8px;font-size:12px;letter-spacing:.52em;color:rgba(232,216,186,.55)}
+
+  .hint{position:absolute;left:34px;bottom:26px;font-size:11px;line-height:2.05;
+    letter-spacing:.13em;color:rgba(226,212,184,.5)}
+  .hint b{color:rgba(240,207,120,.9);font-weight:400}
+  .hint .k{display:inline-block;min-width:64px;color:rgba(240,207,120,.82)}
+
+  #dock{position:absolute;right:26px;bottom:26px;display:flex;gap:9px;flex-wrap:wrap;
+    justify-content:flex-end;max-width:420px}
+  .btn{pointer-events:auto;cursor:pointer;user-select:none;
+    padding:9px 15px;font-size:11px;letter-spacing:.2em;color:rgba(234,220,192,.82);
+    background:linear-gradient(180deg,rgba(30,34,44,.72),rgba(14,17,24,.82));
+    border:1px solid rgba(216,169,78,.26);
+    border-radius:2px;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+    transition:border-color .32s,color .32s,box-shadow .32s,transform .18s;
+    white-space:nowrap;display:flex;align-items:center;gap:7px}
+  .btn:hover{border-color:rgba(240,207,120,.68);color:#f7e9c4;
+    box-shadow:0 0 22px rgba(216,169,78,.28),inset 0 0 16px rgba(216,169,78,.09)}
+  .btn:active{transform:translateY(1px)}
+  .btn.on{border-color:rgba(240,207,120,.8);color:#ffeec2;
+    box-shadow:0 0 26px rgba(216,169,78,.4),inset 0 0 20px rgba(216,169,78,.14)}
+  .btn i{font-style:normal;font-size:12.5px;opacity:.9}
+
+  #stats{position:absolute;right:28px;top:28px;text-align:right;font-size:10px;
+    letter-spacing:.18em;color:rgba(200,182,148,.4);line-height:1.95}
+  #stats span{color:rgba(240,207,120,.72)}
+
+  /* ── 加载屏 ─────────────────────────── */
+  #loader{position:fixed;inset:0;z-index:100;background:
+      radial-gradient(ellipse at 50% 42%,#16202e 0%,#080b12 62%,#04060a 100%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    transition:opacity 1.1s ease,visibility 1.1s}
+  #loader.done{opacity:0;visibility:hidden}
+  #loader .mark{width:56px;height:56px;position:relative;margin-bottom:34px;
+    animation:spin 7s linear infinite}
+  #loader .mark div{position:absolute;width:13px;height:13px;
+    background:linear-gradient(140deg,#f6dfa6,#c9963f);box-shadow:0 0 18px rgba(216,169,78,.62)}
+  #loader .mark div:nth-child(1){left:0;top:0}
+  #loader .mark div:nth-child(2){right:0;top:0}
+  #loader .mark div:nth-child(3){left:0;bottom:0}
+  #loader .mark div:nth-child(4){right:0;bottom:0}
+  #loader .lt{font-size:12px;letter-spacing:.46em;color:rgba(224,206,168,.66);margin-bottom:20px}
+  #loader .bar{width:236px;height:1px;background:rgba(216,169,78,.16);position:relative;overflow:hidden}
+  #loader .bar i{position:absolute;left:0;top:0;height:100%;width:0%;
+    background:linear-gradient(90deg,#8a6425,#f7e3ae,#d8a94e);
+    box-shadow:0 0 12px rgba(240,207,120,.8);transition:width .35s ease}
+  #loader .msg{margin-top:16px;font-size:9.5px;letter-spacing:.3em;color:rgba(180,164,136,.42);
+    height:14px}
+
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  #toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,14px);z-index:20;
+    padding:9px 22px;font-size:11px;letter-spacing:.24em;color:#f5e3b6;
+    background:rgba(12,15,22,.78);border:1px solid rgba(216,169,78,.3);
+    border-radius:2px;opacity:0;transition:opacity .5s,transform .5s;
+    backdrop-filter:blur(8px);pointer-events:none;white-space:nowrap}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:760px){
+    .brand{left:18px;top:16px}.brand h1{font-size:16px;letter-spacing:.3em}
+    .brand .cn{font-size:9px}.brand .rule{width:70px}
+    .hint{display:none}
+    #dock{right:12px;bottom:14px;left:12px;justify-content:center;gap:6px}
+    .btn{padding:7px 10px;font-size:9.5px;letter-spacing:.1em}
+    #stats{display:none}
+    #toast{bottom:88px;font-size:10px}
+  }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="mark"><div></div><div></div><div></div><div></div></div>
+  <div class="lt">CAELUM AUREUM</div>
+  <div class="bar"><i id="lbar"></i></div>
+  <div class="msg" id="lmsg">正在开采石材</div>
+</div>
+
+<div id="ui">
+  <div class="brand">
+    <h1>CAELUM AUREUM</h1>
+    <div class="rule"></div>
+    <div class="cn">金 色 天 城 · 巴 洛 克 浮 空 都 会</div>
+  </div>
+
+  <div class="hint">
+    <div><span class="k">拖拽</span>环绕观览 · 松手带惯性</div>
+    <div><span class="k">滚轮</span>推近拉远 · 双指同效</div>
+    <div><span class="k">点击</span>穹顶 / 喷泉 / 飞艇 / 瀑布 / 旗幡 / 浮岛</div>
+    <div><span class="k">空格</span>昼夜交替　<span class="k" style="min-width:auto">R</span> 复位</div>
+  </div>
+
+  <div id="stats">
+    <div>VOXELS <span id="sv">—</span> · DRAWS <span id="sd">—</span></div>
+    <div><span id="sf">—</span> FPS</div>
+  </div>
+
+  <div id="dock">
+    <div class="btn" data-act="day"><i>☀</i><span>昼夜</span></div>
+    <div class="btn" data-act="orbit"><i>◑</i><span>巡游</span></div>
+    <div class="btn" data-act="storm"><i>☁</i><span>云涌</span></div>
+    <div class="btn" data-act="reset"><i>⌖</i><span>复位</span></div>
+  </div>
+</div>
+
+<div id="vig"></div>
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   CAELUM AUREUM — 体素巴洛克浮空都城
+   单文件 · Three.js CDN（多源回退）· 全程序化建模，零外部素材
+   ═══════════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  var SRC = [
+    'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+    'https://unpkg.com/three@0.128.0/build/three.min.js',
+    'https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.min.js',
+    'https://lib.baomitu.com/three.js/r128/three.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
+  ];
+  var si = 0, started = false;
+
+  function setMsg(t) { var e = document.getElementById('lmsg'); if (e) e.textContent = t; }
+  function setBar(p) { var e = document.getElementById('lbar'); if (e) e.style.width = p + '%'; }
+
+  function tryNext() {
+    if (started) return;
+    if (si >= SRC.length) {
+      setMsg('CDN 全部不可达 · 请检查网络后刷新');
+      return;
+    }
+    var url = SRC[si++];
+    var s = document.createElement('script');
+    s.src = url;
+    s.async = false;
+    var done = false;
+    s.onload = function () {
+      if (done) return; done = true;
+      if (window.THREE) { started = true; launch(); }
+      else tryNext();
+    };
+    s.onerror = function () { if (done) return; done = true; tryNext(); };
+    document.head.appendChild(s);
+    setTimeout(function () { if (!done && !window.THREE) { done = true; tryNext(); } }, 9000);
+  }
+
+  function launch() {
+    setBar(12); setMsg('正在开凿基岩');
+    // 让加载文字先绘一帧，再进入重计算
+    requestAnimationFrame(function () {
+      setTimeout(function () { try { MAIN(); } catch (e) { console.error(e); setMsg('构建失败：' + e.message); } }, 40);
+    });
+  }
+
+  window.__CAE = { setMsg: setMsg, setBar: setBar };
+
+/* ══════════════════ 0. 随机与调色板 ══════════════════ */
+
+  var seed = 20260628;
+  function rnd() {                       // mulberry32
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+  function rr(a, b) { return a + (b - a) * rnd(); }
+  function ri(a, b) { return Math.floor(rr(a, b + 1)); }
+
+  var P = [];
+  function col(hex, kind, extra) {
+    var o = { hex: hex, kind: kind || 'stone' };
+    if (extra) for (var k in extra) o[k] = extra[k];
+    P.push(o); return P.length - 1;
+  }
+
+  // —— 石材 / 象牙白 ——
+  var IVORY   = col(0xDAC8A8);
+  var IVORY2  = col(0xCCBA9B);
+  var IVORY3  = col(0xBFAE90);
+  var STONED  = col(0xAC9979);
+  var STONES  = col(0x8C7A5C);
+  var CREAM   = col(0xF0E6D3);
+  var CHALK   = col(0xFFFFFF);
+  // —— 金 / 铜 ——
+  var GOLD    = col(0xE9A93C, 'gold');
+  var GOLDL   = col(0xFFD86B, 'gold');
+  var GOLDD   = col(0x8A5C12, 'gold');
+  var BRONZE  = col(0x7E5E37, 'gold');
+  var BRONZED = col(0x4F3A21, 'gold');
+  var COPPER  = col(0x5E8C7A, 'gold');
+  // —— 赭 / 陶 ——
+  var OCHRE   = col(0xBA8C4F);
+  var OCHRED  = col(0x8C6634);
+  var TERRA   = col(0xA65A31);
+  var TERRA_D = col(0x7A3E22);
+  // —— 灰蓝 ——
+  var SLATE   = col(0x6D8098);
+  var SLATED  = col(0x4A5C72);
+  var SLATEL  = col(0x96AABE);
+  // —— 深红 ——
+  var CRIMSON = col(0x8E2536);
+  var CRIMSOND= col(0x5E1421);
+  var CRIMSONL= col(0xB24B5B);
+  // —— 岩 ——
+  var ROCK    = col(0x5A4D3D);
+  var ROCKD   = col(0x38302A);
+  var ROCKL   = col(0x7A6B54);
+  var ROCKMOSS= col(0x4E5739);
+  // —— 植 ——
+  var GRASS   = col(0x5C7A43);
+  var GRASSL  = col(0x76945A);
+  var HEDGE   = col(0x33562E);
+  var HEDGEL  = col(0x4A7340);
+  var LEAFD   = col(0x2B482B);
+  var LEAF    = col(0x3E6A3A);
+  // —— 水 ——
+  var WATER   = col(0x7CC2D6, 'water');
+  var WATERD  = col(0x4E93AC, 'water');
+  var WATERL  = col(0xCBF0F8, 'water');
+  // —— 云 ——
+  var CLOUD   = col(0xF3F8FE, 'cloud', { flat: 1 });
+  var CLOUDS  = col(0xD2E1F0, 'cloud', { flat: 1 });
+  var CLOUDG  = col(0xC4D6E6, 'cloud', { flat: 1 });
+  // —— 玻璃 / 发光 ——
+  var GLASS   = col(0x263545, 'glass');
+  var GLASSW  = col(0x3E5266, 'glass');
+  var GLOW    = col(0xFFE7A4, 'glow');
+  var GLOWW   = col(0xFFF6DC, 'glow');
+
+  /* ══════════════════ 1. 体素仓库 ══════════════════ */
+
+  var AIR = -1;
+  var KMAP = new Map();   // 体素占位索引：后写覆盖先写，可挖空
+  var KX = [], KY = [], KZ = [], KC = [];
+  var TOT = 0;
+  var CAP = null;         // 局部捕获缓冲：可动部件复用构件库
+  var BOUND = { x0: 1e9, x1: -1e9, y0: 1e9, y1: -1e9, z0: 1e9, z1: -1e9 };
+
+  function put(x, y, z, c) {
+    x = x | 0; y = y | 0; z = z | 0;
+    if (CAP !== null) { CAP.push(x, y, z, c); return; }
+    var k = (x + 1024) * 4194304 + (y + 1024) * 2048 + (z + 1024);
+    var i = KMAP.get(k);
+    if (i === undefined) {
+      KMAP.set(k, KX.length);
+      KX.push(x); KY.push(y); KZ.push(z); KC.push(c);
+      if (c >= 0) TOT++;
+    } else {
+      if (KC[i] >= 0 && c < 0) TOT--;
+      else if (KC[i] < 0 && c >= 0) TOT++;
+      KC[i] = c;
+    }
+    if (x < BOUND.x0) BOUND.x0 = x; if (x > BOUND.x1) BOUND.x1 = x;
+    if (y < BOUND.y0) BOUND.y0 = y; if (y > BOUND.y1) BOUND.y1 = y;
+    if (z < BOUND.z0) BOUND.z0 = z; if (z > BOUND.z1) BOUND.z1 = z;
+  }
+
+  // 实心盒 (含端点)
+  function box(x0, y0, z0, x1, y1, z1, c) {
+    if (x1 < x0) { var t = x0; x0 = x1; x1 = t; }
+    if (y1 < y0) { var t2 = y0; y0 = y1; y1 = t2; }
+    if (z1 < z0) { var t3 = z0; z0 = z1; z1 = t3; }
+    for (var x = x0; x <= x1; x++)
+      for (var y = y0; y <= y1; y++)
+        for (var z = z0; z <= z1; z++) put(x, y, z, c);
+  }
+  // 只铺壳 (厚度 1)
+  function shell(x0, y0, z0, x1, y1, z1, c) {
+    if (x1 < x0) { var t = x0; x0 = x1; x1 = t; }
+    if (y1 < y0) { var t2 = y0; y0 = y1; y1 = t2; }
+    if (z1 < z0) { var t3 = z0; z0 = z1; z1 = t3; }
+    for (var x = x0; x <= x1; x++)
+      for (var y = y0; y <= y1; y++)
+        for (var z = z0; z <= z1; z++)
+          if (x === x0 || x === x1 || y === y0 || y === y1 || z === z0 || z === z1) put(x, y, z, c);
+  }
+  // 水平实心板
+  function slab(x0, z0, x1, z1, y, c) { box(x0, y, z0, x1, y, z1, c); }
+  // 空心矩形框 (半宽 w,d)
+  function frame(cx, cz, y, w, d, c, th) {
+    th = th || 1;
+    for (var x = -w; x <= w; x++)
+      for (var z = -d; z <= d; z++) {
+        var ax = Math.abs(x), az = Math.abs(z);
+        if (ax > w - th || az > d - th) put(cx + x, y, cz + z, c);
+      }
+  }
+  // 水平圆盘 (填充)
+  function disc(cx, cz, y, r, c) {
+    var R2 = r * r + r * 0.6;
+    for (var x = -r; x <= r; x++)
+      for (var z = -r; z <= r; z++)
+        if (x * x + z * z <= R2) put(cx + x, y, cz + z, c);
+  }
+  // 水平圆环
+  function ring(cx, cz, y, r, th, c) {
+    var R2 = r * r + r * 0.6, I2 = Math.max(0, (r - th) * (r - th) - (r - th) * 0.6);
+    for (var x = -r; x <= r; x++)
+      for (var z = -r; z <= r; z++) {
+        var d2 = x * x + z * z;
+        if (d2 <= R2 && d2 >= I2) put(cx + x, y, cz + z, c);
+      }
+  }
+  // 圆柱 (竖直，可选空心)
+  function cyl(cx, cz, y0, y1, r, c, hollow) {
+    for (var y = y0; y <= y1; y++) {
+      if (hollow) ring(cx, cz, y, r, hollow, c); else disc(cx, cz, y, r, c);
+    }
+  }
+  // 竖直矩形柱体（实心/壳）
+  function prism(x0, z0, x1, z1, y0, y1, c, shellOnly) {
+    if (shellOnly) shell(x0, y0, z0, x1, y1, z1, c); else box(x0, y0, z0, x1, y1, z1, c);
+  }
+
+  /* ══════════════════ 2. 巴洛克构件库 ══════════════════ */
+
+  // ── 阶梯穹顶（voxel dome）
+  //  opts: {ribs, ribC, thick, bandAt[], bandC, hRatio, cap}
+  function dome(cx, cy, cz, R, H, c, opts) {
+    opts = opts || {};
+    var ribs = opts.ribs === undefined ? 0 : opts.ribs;
+    var ribC = opts.ribC === undefined ? c : opts.ribC;
+    var thick = opts.thick || 2;
+    var pow = opts.pow || 0.5;
+    var bands = opts.bandAt || null;
+    var bandC = opts.bandC === undefined ? c : opts.bandC;
+
+    for (var y = 0; y <= H; y++) {
+      var t = y / H;
+      var rr = R * Math.pow(Math.max(0, 1 - t * t), pow);
+      rr = Math.round(rr);
+      if (rr <= 0) break;
+      var outer = rr, inner = Math.max(0, rr - thick);
+      var O2 = outer * outer + outer * 0.6, I2 = Math.max(0, inner * inner - inner * 0.6);
+      var bandY = false;
+      if (bands) for (var bi = 0; bi < bands.length; bi++) if (bands[bi] === y) bandY = true;
+
+      for (var x = -outer; x <= outer; x++) {
+        for (var z = -outer; z <= outer; z++) {
+          var d2 = x * x + z * z;
+          if (d2 > O2) continue;
+          if (d2 < I2 && rr > thick - 1) continue;
+          var cc = c;
+          if (bandY) cc = bandC;
+          else if (ribs > 0) {
+            var ang = Math.atan2(z, x) + Math.PI;
+            var seg = Math.PI * 2 / ribs;
+            var rem = ang % seg; var da = Math.min(rem, seg - rem);
+            if (da * rr < 1.15) cc = ribC;
+          }
+          put(cx + x, cy + y, cz + z, cc);
+        }
+      }
+    }
+    // 顶盖
+    if (opts.cap !== false) {
+      var topR = Math.max(0, Math.round(R * 0.16));
+      disc(cx, cz, cy + H, topR, opts.capC === undefined ? ribC : opts.capC);
+    }
+  }
+
+  // ── 鼓座（drum）：带壁柱、窗洞、檐口
+  function drum(cx, cy, cz, R, H, c, cAccent, cWin) {
+    for (var y = 0; y <= H; y++) {
+      var seg = 20;
+      for (var x = -R; x <= R; x++)
+        for (var z = -R; z <= R; z++) {
+          var d2 = x * x + z * z;
+          if (d2 > R * R + R * 0.6 || d2 < (R - 2) * (R - 2) - R * 0.6) continue;
+          var ang = Math.atan2(z, x) + Math.PI;
+          var k = Math.round(ang / (Math.PI * 2 / seg));
+          var isPil = (k % 2 === 0);
+          var cc = c;
+          // 窗洞
+          var inWin = false;
+          if (!isPil) {
+            var mid = Math.abs(ang - (k * Math.PI * 2 / seg));
+            if (y >= 2 && y <= H - 4 && mid * R < 1.5) inWin = true;
+          }
+          if (y === H) cc = cAccent;
+          else if (y === 0 || y === 1) cc = cAccent;
+          else if (inWin) cc = cWin;
+          put(cx + x, cy + y, cz + z, cc);
+        }
+    }
+  }
+
+  // ── 采光亭（lantern）
+  function lantern(cx, cy, cz, R, H, c, cGold) {
+    cyl(cx, cz, cy, cy + H, R, c, 1);
+    // 小拱窗
+    for (var i = 0; i < 8; i++) {
+      var a = i / 8 * Math.PI * 2;
+      var px = Math.round(cx + Math.cos(a) * R), pz = Math.round(cz + Math.sin(a) * R);
+      box(px, cy + 1, pz, px, cy + Math.max(1, H - 2), pz, GLASS);
+    }
+    // 檐 + 小穹顶
+    ring(cx, cz, cy + H, R + 1, 1, cGold);
+    disc(cx, cz, cy + H, R + 1, cGold);
+    dome(cx, cy + H + 1, cz, R + 1, Math.round(R * 1.1), c, { ribs: 8, ribC: cGold, thick: 1, pow: 0.44 });
+  }
+
+  // ── 尖顶（finial / spire）—— 层层收的镀金塔尖
+  function finial(cx, cy, cz, H, c, cGold) {
+    var r = Math.max(2, Math.round(H * 0.16));
+    for (var y = 0; y < H; y++) {
+      var t = y / H;
+      var rr2 = Math.max(0, Math.round(r * (1 - t * 1.05)));
+      if (rr2 <= 0) { put(cx, cy + y, cz, cGold); continue; }
+      for (var x = -rr2; x <= rr2; x++)
+        for (var z = -rr2; z <= rr2; z++)
+          if (x * x + z * z <= rr2 * rr2 + 0.6) put(cx + x, cy + y, cz + z, y % 3 === 0 ? c : cGold);
+    }
+    // 顶端宝球 + 十字
+    put(cx, cy + H, cz, cGold);
+    put(cx, cy + H + 1, cz, cGold);
+    put(cx, cy + H + 2, cz, cGold);
+    put(cx + 1, cy + H + 2, cz, cGold);
+    put(cx - 1, cy + H + 2, cz, cGold);
+    put(cx, cy + H + 2, cz + 1, cGold);
+    put(cx, cy + H + 2, cz - 1, cGold);
+  }
+
+  // ── 涡卷托架（volute）：2D 对数螺旋，垂直于平面方向挤出
+  //  plane: 'xy'(法向 z) | 'zy'(法向 x)
+  function volute(cx, cy, cz, R, turns, c, plane, depth) {
+    depth = depth || 2;
+    var N = Math.max(24, Math.round(R * turns * 14));
+    for (var i = 0; i <= N; i++) {
+      var t = i / N;
+      var a = t * turns * Math.PI * 2;
+      var rr2 = R * (1 - 0.74 * t);
+      var px = Math.round(Math.cos(a) * rr2);
+      var py = Math.round(Math.sin(a) * rr2);
+      for (var d = 0; d < depth; d++) {
+        if (plane === 'zy') put(cx + d, cy + py, cz + px, c);
+        else if (plane === 'xz') put(cx + px, cy + d, cz + py, c);
+        else put(cx + px, cy + py, cz + d, c);
+      }
+    }
+  }
+
+  // ── 层叠檐口（三段外挑 + 齿饰）
+  function cornice(cx, cz, w, d, y, cA, cB) {
+    frame(cx, cz, y, w, d, cB, 1);
+    frame(cx, cz, y + 1, w + 1, d + 1, cA, 1);
+    frame(cx, cz, y + 2, w + 2, d + 2, GOLD, 1);
+    // 齿饰
+    for (var x = -w - 1; x <= w + 1; x += 3) {
+      put(cx + x, y - 1, cz - d - 1, cA); put(cx + x, y - 1, cz + d + 1, cA);
+    }
+    for (var z = -d - 1; z <= d + 1; z += 3) {
+      put(cx - w - 1, y - 1, cz + z, cA); put(cx + w + 1, y - 1, cz + z, cA);
+    }
+  }
+  // 圆形檐口
+  function corniceRound(cx, cz, y, r, cA, cB) {
+    ring(cx, cz, y, r, 1, cB);
+    ring(cx, cz, y + 1, r + 1, 1, cA);
+    ring(cx, cz, y + 2, r + 2, 1, GOLD);
+    for (var i = 0; i < 48; i++) {
+      var a = i / 48 * Math.PI * 2;
+      put(cx + Math.round(Math.cos(a) * (r + 1)), y - 1, cz + Math.round(Math.sin(a) * (r + 1)), cA);
+    }
+  }
+
+  // ── 半圆拱券（立在 xz 平面，沿 z 方向有厚度）
+  //  axis='x' → 拱面朝 ±z；axis='z' → 拱面朝 ±x
+  function arch(cx, cy, cz, r, thick, depth, c, axis, cKey) {
+    var dHalf = (depth - 1) >> 1;
+    for (var i = 0; i <= r; i++) {
+      var y = cy + i;
+      var half = Math.round(Math.sqrt(Math.max(0, r * r - i * i)));
+      var innerHalf = Math.round(Math.sqrt(Math.max(0, (r - thick) * (r - thick) - i * i)));
+      var outer = half, inner = (i <= r - thick) ? innerHalf : 0;
+      for (var s = -outer; s <= outer; s++) {
+        if (i <= r - thick && Math.abs(s) < inner) continue;
+        for (var d = -dHalf; d <= dHalf; d++) {
+          var cc = c;
+          if (cKey !== undefined && s === 0 && i >= r - 1) cc = cKey;
+          if (axis === 'z') put(cx + d, y, cz + s, cc);
+          else put(cx + s, y, cz + d, cc);
+        }
+      }
+    }
+  }
+
+  // ── 巨柱（柱础 / 柱身 / 柱头），方柱带凹槽
+  function column(cx, cz, y0, y1, w, c, cCap, cBase) {
+    var hw = (w - 1) >> 1;
+    // 柱础
+    box(cx - hw - 1, y0, cz - hw - 1, cx + hw + 1, y0 + 1, cz + hw + 1, cBase);
+    box(cx - hw, y0 + 2, cz - hw, cx + hw, y0 + 2, cz + hw, cBase);
+    // 柱身（四角切角 → 凹槽观感）
+    for (var y = y0 + 3; y <= y1 - 3; y++) {
+      for (var x = -hw; x <= hw; x++)
+        for (var z = -hw; z <= hw; z++) {
+          if (Math.abs(x) === hw && Math.abs(z) === hw) continue;
+          put(cx + x, y, cz + z, c);
+        }
+    }
+    // 柱头：颈部 + 外挑 + 涡卷
+    box(cx - hw, y1 - 2, cz - hw, cx + hw, y1 - 2, cz + hw, cCap);
+    box(cx - hw - 1, y1 - 1, cz - hw - 1, cx + hw + 1, y1 - 1, cz + hw + 1, cCap);
+    box(cx - hw - 1, y1, cz - hw - 1, cx + hw + 1, y1, cz + hw + 1, cCap);
+    if (w >= 3) {
+      volute(cx - hw - 1, y1, cz, 2, 0.85, cCap, 'xy', hw * 2 + 2);
+      volute(cx + hw + 1, y1, cz, 2, 0.85, cCap, 'xy', hw * 2 + 2);
+    }
+  }
+
+  // ── 栏杆（瓶柱 + 扶手）
+  function balustrade(x0, z0, x1, z1, y, c, cRail) {
+    cRail = cRail === undefined ? c : cRail;
+    var n = Math.max(Math.abs(x1 - x0), Math.abs(z1 - z0));
+    if (n === 0) return;
+    for (var i = 0; i <= n; i++) {
+      var x = Math.round(x0 + (x1 - x0) * i / n);
+      var z = Math.round(z0 + (z1 - z0) * i / n);
+      if (i % 3 === 0) { put(x, y + 1, z, c); put(x, y + 2, z, c); put(x, y + 3, z, c); }
+      put(x, y, z, c);            // 底座
+      put(x, y + 4, z, GOLDL);    // 扶手（镀金）
+    }
+  }
+  // 环形栏杆
+  function balustradeRing(cx, cz, y, r, c, cRail) {
+    var n = Math.max(12, Math.round(r * 7));
+    for (var i = 0; i < n; i++) {
+      var a = i / n * Math.PI * 2;
+      var x = Math.round(cx + Math.cos(a) * r), z = Math.round(cz + Math.sin(a) * r);
+      if (i % 3 === 0) { put(x, y + 1, z, c); put(x, y + 2, z, c); put(x, y + 3, z, c); }
+      put(x, y, z, c); put(x, y + 4, z, GOLDL);
+    }
+  }
+
+  /* ══════════════════ 3. 细部构件 ══════════════════ */
+
+  // 捕获：让任何构件函数把体素写进独立缓冲区（用于飞艇/旗幡等可动件）
+  function capture(fn) {
+    var prev = CAP; CAP = [];
+    var out;
+    try { fn(); out = CAP; } finally { CAP = prev; }
+    return out;
+  }
+
+  function pA(cx, cy, cz, u, v, dep, c, axis) {
+    if (axis === 'x') put(cx + dep, cy + v, cz + u, c);
+    else put(cx + u, cy + v, cz + dep, c);
+  }
+
+  function noise3(x, y, z) {
+    var n = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+    return n - Math.floor(n);
+  }
+
+  // ── 山花（三角楣）：可整可断，断口内卷，斜面镀金
+  function pediment(cx, cy, cz, hw, h, c, cTym, axis, broken) {
+    var gap = Math.round(hw * 0.30);
+    for (var y = 0; y <= h; y++) {
+      var w = Math.round(hw * (1 - y / h));
+      var gw = Math.max(1, Math.round(gap * (1 - y / h)));
+      for (var u = -w; u <= w; u++) {
+        if (broken && Math.abs(u) <= gw) {
+          if (Math.abs(u) === gw && y > 0 && y < h - 1) pA(cx, cy, cz, u, y, 1, GOLDL, axis);
+          continue;
+        }
+        var edge = (Math.abs(u) >= w - 1) || y === 0 || y === h;
+        var cc = edge ? c : cTym;
+        pA(cx, cy, cz, u, y, 0, cc, axis);
+        pA(cx, cy, cz, u, y, 1, cc, axis);
+        if (Math.abs(u) >= w - 1 && y > 0) pA(cx, cy, cz, u, y, 2, GOLDL, axis);
+      }
+    }
+    // 楣心金太阳
+    var sy = Math.round(h * 0.36), mr = Math.max(1, Math.round(hw * 0.13));
+    for (var a = 0; a < 12; a++) {
+      var an = a / 12 * Math.PI * 2;
+      var rr2 = mr + 1 + (a % 2 ? 2 : 0);
+      pA(cx, cy, cz, Math.round(Math.cos(an) * rr2), sy + Math.round(Math.sin(an) * rr2), 2, GOLDL, axis);
+    }
+    for (var x2 = -mr; x2 <= mr; x2++)
+      for (var y2 = -mr; y2 <= mr; y2++)
+        if (x2 * x2 + y2 * y2 <= mr * mr + 1) pA(cx, cy, cz, x2, sy + y2, 2, GOLD, axis);
+  }
+
+  // ── 窗（面朝 ±z / ±x）
+  function winZ(cx, cy, cz, hw, h, cFr, cGl, dir) {
+    for (var y = 0; y < h; y++)
+      for (var u = -hw; u <= hw; u++) {
+        var edge = (Math.abs(u) === hw || y === 0 || y === h - 1);
+        if (edge) put(cx + u, cy + y, cz + dir, cFr);
+        else put(cx + u, cy + y, cz, cGl);
+      }
+    put(cx, cy + h, cz + dir, cFr);                       // 拱心石
+    put(cx - hw - 1, cy + h - 1, cz + dir, GOLDL);
+    put(cx + hw + 1, cy + h - 1, cz + dir, GOLDL);
+  }
+  function winX(cx, cy, cz, hw, h, cFr, cGl, dir) {
+    for (var y = 0; y < h; y++)
+      for (var u = -hw; u <= hw; u++) {
+        var edge = (Math.abs(u) === hw || y === 0 || y === h - 1);
+        if (edge) put(cx + dir, cy + y, cz + u, cFr);
+        else put(cx, cy + y, cz + u, cGl);
+      }
+    put(cx + dir, cy + h, cz, cFr);
+  }
+
+  // ── 壁龛（凹进 + 贝壳顶 + 雕像）
+  function niche(cx, cy, cz, hw, h, cFr, dir) {
+    box(cx - hw - 1, cy - 1, cz, cx + hw + 1, cy - 1, cz + dir, cFr);
+    for (var y = 0; y < h; y++) {
+      put(cx - hw - 1, cy + y, cz + dir, cFr);
+      put(cx + hw + 1, cy + y, cz + dir, cFr);
+      put(cx, cy + y, cz, SLATED);
+    }
+    arch(cx, cy + h - 1, cz + dir, hw + 1, 1, 1, cFr, 'x');
+    // 贝壳放射
+    for (var a = 0; a < 7; a++) {
+      var an = Math.PI * (0.12 + 0.76 * a / 6);
+      put(cx + Math.round(Math.cos(an) * hw), cy + h - 1 + Math.round(Math.sin(an) * 1.2), cz + dir, GOLDL);
+    }
+  }
+
+  // ── 雕像（1:10 尺度的人形，巴洛克式长袍）
+  function statue(cx, cy, cz, h, c, cBase, cGold) {
+    h = h || 11;
+    var s = h / 11;
+    var bw = Math.max(1, Math.round(2 * s));
+    // 基座
+    box(cx - bw - 1, cy, cz - bw - 1, cx + bw + 1, cy + 1, cz + bw + 1, cBase);
+    box(cx - bw, cy + 2, cz - bw, cx + bw, cy + 2, cz + bw, cBase);
+    var y0 = cy + 3;
+    var bodyH = Math.max(3, Math.round(5 * s));
+    for (var i = 0; i < bodyH; i++) {
+      var t = i / bodyH;
+      var w = Math.max(1, Math.round((bw + 0.6) - (bw - 0.5) * t));
+      var d = Math.max(1, Math.round((bw - 0.2) - (bw - 0.9) * t));
+      box(cx - w, y0 + i, cz - d, cx + w, y0 + i, cz + d, c);
+      if (i === Math.floor(bodyH * 0.55)) {                 // 腰带 / 衣褶
+        box(cx - w, y0 + i, cz - d, cx + w, y0 + i, cz + d, cGold);
+      }
+    }
+    // 肩
+    var sy = y0 + bodyH;
+    box(cx - bw - 1, sy, cz - 1, cx + bw + 1, sy, cz + 1, c);
+    // 臂（下垂/前伸）
+    put(cx - bw - 1, sy - 1, cz, c); put(cx + bw + 1, sy - 1, cz, c);
+    put(cx - bw - 1, sy - 2, cz, c); put(cx + bw + 1, sy - 2, cz, c);
+    // 头 + 冠
+    box(cx - 1, sy + 1, cz - 1, cx + 1, sy + 2, cz + 1, c);
+    put(cx, sy + 3, cz, cGold);
+    put(cx, sy + 1, cz + 1, cGold);                          // 面部高光
+  }
+
+  // ── 方尖碑
+  function obelisk(cx, cy, cz, h, c, cGold) {
+    box(cx - 3, cy, cz - 3, cx + 3, cy + 1, cz + 3, c);
+    box(cx - 2, cy + 2, cz - 2, cx + 2, cy + 2, cz + 2, c);
+    for (var y = 3; y < h; y++) {
+      var w = Math.max(0, Math.round(2 * (1 - (y - 3) / (h - 3))));
+      box(cx - w, cy + y, cz - w, cx + w, cy + y, cz + w, c);
+      if (w > 0) put(cx, cy + y, cz + w, GOLDL);
+    }
+    put(cx, cy + h, cz, cGold); put(cx, cy + h + 1, cz, cGold);
+    put(cx, cy + h + 2, cz, cGold);
+  }
+
+  // ── 飞扶壁：阶梯斜撑 + 上弦 + 墩座
+  function flyingButtress(x0, z0, x1, z1, y0, y1, c, cArch) {
+    var n = Math.max(8, Math.round(Math.hypot(x1 - x0, z1 - z0) * 1.6));
+    for (var i = 0; i <= n; i++) {
+      var t = i / n;
+      var x = Math.round(x0 + (x1 - x0) * t);
+      var z = Math.round(z0 + (z1 - z0) * t);
+      var y = Math.round(y0 + (y1 - y0) * Math.pow(t, 0.82));
+      put(x, y, z, c); put(x, y + 1, z, c);
+      if (t > 0.5) put(x, y + 2, z, c);
+      if (t > 0.85) { put(x, y + 3, z, c); put(x, y + 4, z, c); }
+    }
+    // 下面的连拱
+    var mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+    var my = (y0 + y1) / 2;
+    for (var j = 0; j < 12; j++) {
+      var a = Math.PI * j / 11;
+      var px = Math.round(mx + Math.cos(a) * Math.abs(x1 - x0) * 0.26);
+      var pz = Math.round(mz + Math.cos(a) * Math.abs(z1 - z0) * 0.26);
+      var py = Math.round(y0 + Math.sin(a) * (my - y0) * 0.9);
+      put(px, py, pz, cArch);
+    }
+  }
+
+  // ── 大台阶（沿 z 实心堆叠）+ 侧墙
+  function stairsZ(cx, z0, z1, yTop, hw, c, cSide, cGold) {
+    var n = yTop;
+    var dz = (z1 - z0) / n;
+    for (var i = 0; i < n; i++) {
+      var y = i + 1;
+      var za = Math.round(z0 + dz * i), zb = Math.round(z0 + dz * (i + 1)) - 1;
+      if (zb < za) zb = za;
+      box(cx - hw, 0, za, cx + hw, y, zb, c);
+      // 踏面前沿提亮
+      box(cx - hw, y, za, cx + hw, y, za, cSide);
+    }
+    // 两侧斜墙 + 栏
+    for (var s = -1; s <= 1; s += 2) {
+      for (var k = 0; k < n; k++) {
+        var yy = k + 1;
+        var zz = Math.round(z0 + dz * k);
+        box(cx + s * hw, yy, zz, cx + s * hw, yy + 2, zz + Math.round(dz), cSide);
+        if (k % 2 === 0) put(cx + s * (hw - 1), yy + 3, zz, cGold);
+      }
+    }
+  }
+
+  // ── 修剪树（球/锥）
+  function tree(cx, cy, cz, h, r, cLeaf, cLeafL, cTrunk) {
+    box(cx, cy, cz, cx, cy + Math.max(2, Math.round(h * 0.28)), cz, cTrunk);
+    var cy2 = cy + Math.max(2, Math.round(h * 0.3));
+    for (var y = 0; y < h; y++) {
+      var t = y / h;
+      var rr2 = Math.round(r * Math.sqrt(Math.max(0, 1 - Math.pow(2 * t - 1, 2))) + 1.1);
+      if (rr2 <= 0) continue;
+      for (var x = -rr2; x <= rr2; x++)
+        for (var z = -rr2; z <= rr2; z++) {
+          if (x * x + z * z > rr2 * rr2 + 0.8) continue;
+          var n = noise3(cx + x, cy2 + y, cz + z);
+          if (n < 0.34) continue;                                   // 稀疏叶
+          put(cx + x, cy2 + y, cz + z, n > 0.72 ? cLeafL : cLeaf);
+        }
+    }
+  }
+
+  // ── 绿篱矩框
+  function hedgeRect(cx, cz, hw, hd, y, h, c1, c2) {
+    for (var x = -hw; x <= hw; x++)
+      for (var z = -hd; z <= hd; z++) {
+        if (Math.abs(x) < hw - 1 && Math.abs(z) < hd - 1 && !(Math.abs(x) === 0 && Math.abs(z) === 0)) {
+          if (!(Math.abs(x) <= hw - 2 && Math.abs(z) <= hd - 2)) { } else continue;
+        }
+        if (Math.abs(x) < hw - 1 && Math.abs(z) < hd - 1) {
+          if (Math.abs(x) === 0 || Math.abs(z) === 0) {
+            // 内部十字小径
+          } else continue;
+        }
+        for (var yy = 0; yy < h; yy++) {
+          var n = noise3(cx + x, y + yy, cz + z);
+          put(cx + x, y + yy, cz + z, (yy === h - 1 || n > 0.7) ? c2 : c1);
+        }
+      }
+  }
+
+  // ── 喷泉
+  function fountain(cx, cy, cz, r, cStone, cWater, cGold) {
+    // 池壁
+    for (var y = 0; y < 3; y++) ring(cx, cz, cy + y, r, 2, y === 2 ? cStone : cGold);
+    // 水面
+    disc(cx, cz, cy + 1, r - 2, cWater);
+    // 上层圆盘
+    cyl(cx, cz, cy + 2, cy + 7, 2, cStone);
+    disc(cx, cz, cy + 8, 5, cStone);
+    ring(cx, cz, cy + 8, 5, 1, cGold);
+    disc(cx, cz, cy + 9, 4, cWater);
+    // 再上一层
+    cyl(cx, cz, cy + 10, cy + 13, 1, cStone);
+    disc(cx, cz, cy + 14, 3, cStone);
+    disc(cx, cz, cy + 15, 2, cWater);
+    // 顶点饰
+    put(cx, cy + 16, cz, cGold);
+    put(cx, cy + 17, cz, cGold);
+  }
+
+  // ── 飞桥
+  function skyBridge(x0, z0, x1, z1, y, w, c, cRail, cGold) {
+    var n = Math.round(Math.hypot(x1 - x0, z1 - z0));
+    var dx = (x1 - x0) / n, dz = (z1 - z0) / n;
+    for (var i = 0; i <= n; i++) {
+      var t = i / n;
+      var lift = Math.round(Math.sin(t * Math.PI) * Math.max(3, Math.min(9, n * 0.07)));
+      var x = Math.round(x0 + dx * i), z = Math.round(z0 + dz * i);
+      for (var u = -w; u <= w; u++) {
+        var ox = Math.round(-dz * u), oz = Math.round(dx * u);
+        put(x + ox, y + lift, z + oz, c);
+        if (Math.abs(u) === w) { put(x + ox, y + lift + 1, z + oz, cRail); put(x + ox, y + lift + 2, z + oz, cRail); }
+        if (i % 5 === 0 && Math.abs(u) === w) put(x + ox, y + lift + 3, z + oz, cGold);
+      }
+      // 桥拱
+      if (i % 4 === 0 && lift > 2) {
+        put(x, y + lift - 1, z, c);
+        if (i % 8 === 0) put(x, y + lift - 2, z, c);
+      }
+    }
+  }
+
+  // ── 旗杆（旗面动态生成，登记进 FLAGS）
+  var FLAGS = [];
+  function flagPole(cx, cy, cz, h, c, cGold, rot) {
+    for (var y = 0; y <= h; y++) put(cx, cy + y, cz, y % 6 === 0 ? cGold : c);
+    put(cx, cy + h + 1, cz, cGold);
+    put(cx, cy + h + 2, cz, cGold);
+    FLAGS.push({ x: cx, y: cy + h - 10, z: cz, rot: rot || 0 });
+  }
+
+  /* ══════════════════ 4. 世界构建 ══════════════════ */
+
+  var PICKS = [];
+  function pick(type, x, y, z, r) { PICKS.push({ t: type, x: x, y: y, z: z, r: r }); }
+
+  function balustradeRect(cx, cz, hw, hd, y, c, cRail) {
+    balustrade(cx - hw, cz - hd, cx + hw, cz - hd, y, c, cRail);
+    balustrade(cx - hw, cz + hd, cx + hw, cz + hd, y, c, cRail);
+    balustrade(cx - hw, cz - hd, cx - hw, cz + hd, y, c, cRail);
+    balustrade(cx + hw, cz - hd, cx + hw, cz + hd, y, c, cRail);
+  }
+  // 语义化包装：前 = 面朝 ±z；侧 = 面朝 ±x
+  function pedFront(cx, cy, cz, hw, h, c, cTym, broken) { pediment(cx, cy, cz, hw, h, c, cTym, 'z', broken); }
+  function archFront(cx, cy, cz, r, th, dep, c, key) { arch(cx, cy, cz, r, th, dep, c, 'x', key); }
+  function archSide(cx, cy, cz, r, th, dep, c, key) { arch(cx, cy, cz, r, th, dep, c, 'z', key); }
+
+  // ── 4.1 浮空岛体 ────────────────────────────────
+  function buildIsland(cx, cy, cz, R, o) {
+    o = o || {};
+    var depth = o.depth || Math.round(R * 0.66);
+    var pave = o.pave === undefined ? IVORY3 : o.pave;
+    var edge = o.edge === undefined ? STONED : o.edge;
+    var rim = o.rim === undefined ? STONES : o.rim;
+
+    disc(cx, cz, cy, R, rim);
+    disc(cx, cz, cy + 1, R - 1, pave);
+    ring(cx, cz, cy + 1, R, 1, edge);
+
+    for (var i = 1; i <= depth; i++) {
+      var t = i / depth;
+      var rad = Math.round(R * Math.pow(1 - t, 0.42));
+      if (rad < 1) break;
+      var th = t < 0.45 ? 3 : 2;
+      var lim = rad * rad + rad * 0.8;
+      var ir = Math.max(0, rad - th);
+      var ilim = Math.max(0, ir * ir - ir * 0.8);
+      for (var x = -rad; x <= rad; x++) {
+        for (var z = -rad; z <= rad; z++) {
+          var d2 = x * x + z * z;
+          if (d2 > lim) continue;
+          if (d2 < ilim && i < depth - 2) continue;
+          var n = noise3(cx + x, cy - i, cz + z);
+          put(cx + x, cy - i, cz + z, n < 0.16 ? ROCKD : (n < 0.64 ? ROCK : (n < 0.88 ? ROCKL : ROCKMOSS)));
+        }
+      }
+    }
+    // 岛底垂石
+    var nd = Math.max(3, Math.round(R / 11));
+    for (var k = 0; k < nd; k++) {
+      var a = rnd() * Math.PI * 2, dr = rr(0.2, 0.78) * R;
+      var px = cx + Math.round(Math.cos(a) * dr), pz = cz + Math.round(Math.sin(a) * dr);
+      var hh = Math.round(rr(5, 15));
+      var by = cy - Math.round(depth * rr(0.6, 0.92));
+      for (var y = 0; y < hh; y++) {
+        put(px, by - y, pz, y > hh - 3 ? ROCKD : ROCK);
+        if (y % 3 === 0) { put(px + 1, by - y, pz, ROCKD); put(px, by - y, pz + 1, ROCKD); }
+      }
+    }
+    // 岛缘崩石
+    var nn = Math.round(R * 1.05);
+    for (var j = 0; j < nn; j++) {
+      var a2 = j / nn * Math.PI * 2;
+      var jr = R + (rnd() < 0.28 ? 1 : 0);
+      var qx = cx + Math.round(Math.cos(a2) * jr), qz = cz + Math.round(Math.sin(a2) * jr);
+      put(qx, cy, qz, rnd() < 0.5 ? ROCKL : ROCK);
+      if (rnd() < 0.45) put(qx, cy - 1, qz, ROCK);
+      if (rnd() < 0.2) put(qx, cy - 2, qz, ROCKD);
+    }
+  }
+
+  // ── 4.2 台基 + 大台阶 ───────────────────────────
+  function buildPodium() {
+    shell(-58, 0, -58, 58, 8, 46, OCHRE);
+    slab(-58, -58, 58, 46, 8, IVORY3);
+    frame(0, -6, 3, 59, 53, STONES, 1);
+    frame(0, -6, 6, 59, 53, CREAM, 1);
+    frame(0, -6, 8, 60, 54, IVORY, 1);
+    // 台基壁柱带
+    for (var x = -54; x <= 54; x += 12) {
+      box(x, 1, 46, x + 1, 5, 46, IVORY2);
+      box(x, 1, -58, x + 1, 5, -58, IVORY2);
+      box(58, 1, x, 58, 5, x + 1, IVORY2);
+      box(-58, 1, x, -58, 5, x + 1, IVORY2);
+    }
+    // 正面大台阶（8 级，48 宽）
+    stairsZ(0, 66, 46, 8, 24, IVORY2, STONED, GOLDL);
+    // 台阶两侧基座 + 雕像
+    for (var s = -1; s <= 1; s += 2) {
+      box(s * 26, 0, 44, s * 34, 10, 52, IVORY2);
+      box(s * 26, 10, 44, s * 34, 11, 52, CREAM);
+      statue(s * 30, 11, 48, 11, IVORY, STONED, GOLDL);
+      statue(s * 30, 11, 42, 11, IVORY, STONED, GOLDL);
+    }
+  }
+
+  // ── 4.3 正立面 ──────────────────────────────────
+  function buildFacade() {
+    // 大门
+    box(-7, 8, 31, 7, 25, 31, CRIMSOND);
+    for (var x = -6; x <= 6; x += 3) box(x, 8, 31, x, 25, 31, GOLDD);
+    box(-8, 8, 31, -8, 29, 31, CREAM);
+    box(8, 8, 31, 8, 29, 31, CREAM);
+    box(-8, 29, 31, 8, 29, 31, CREAM);
+    archFront(0, 25, 31, 9, 2, 2, CREAM, GOLDL);
+    // 巨柱
+    var cols = [-26, -17, -9, 9, 17, 26];
+    for (var i = 0; i < cols.length; i++) {
+      column(cols[i], 32, 10, 40, 5, IVORY2, CREAM, STONED);
+    }
+    // 柱上楣
+    box(-30, 40, 30, 30, 42, 33, CREAM);
+    box(-30, 43, 30, 30, 43, 34, IVORY);
+    // 断山花
+    pedFront(0, 34, 31, 22, 9, CREAM, IVORY3, true);
+    // 檐下涡卷托架
+    for (var v = -26; v <= 26; v += 9) volute(v, 40, 33, 3, 0.85, CREAM, 'xy', 2);
+    // 壁龛雕像
+    statue(-17, 12, 32, 8, IVORY, STONED, GOLDL);
+    statue(17, 12, 32, 8, IVORY, STONED, GOLDL);
+    // 屋顶栏杆 + 角部雕像
+    balustrade(-30, 31, 30, 31, 46, IVORY, CREAM);
+    statue(-28, 46, 31, 8, IVORY, STONED, GOLDL);
+    statue(28, 46, 31, 8, IVORY, STONED, GOLDL);
+  }
+
+  // ── 4.4 鼓座 + 大穹顶 + 采光亭 ──────────────────
+  function buildDome() {
+    var CX = 0, CZ = -1;
+    drum(CX, 46, CZ, 24, 12, IVORY, CREAM, GLASS);
+    corniceRound(CX, CZ, 58, 24, CREAM, STONED);
+    // 鼓座顶涡卷托架
+    for (var i = 0; i < 16; i++) {
+      var a = i / 16 * Math.PI * 2;
+      volute(CX + Math.round(Math.cos(a) * 24), 55, CZ + Math.round(Math.sin(a) * 24), 3, 0.9, CREAM, 'xy', 2);
+    }
+    // 大穹顶：12 肋 + 两道金环
+    dome(CX, 58, CZ, 24, 20, SLATEL, { ribs: 12, ribC: GOLDL, thick: 3, bandAt: [6, 13], bandC: GOLDL });
+    lantern(CX, 78, CZ, 5, 6, IVORY, GOLDL);
+    finial(CX, 92, CZ, 10, IVORY, GOLDL);
+    pick('dome', CX, 68, CZ, 30);
+  }
+
+  // ── 4.5 钟塔 ────────────────────────────────────
+  function buildTower(cx, cz) {
+    var hw = 8;
+    shell(cx - hw, 8, cz - hw, cx + hw, 46, cz + hw, IVORY);
+    // 四角壁柱
+    for (var sx = -1; sx <= 1; sx += 2)
+      for (var sz = -1; sz <= 1; sz += 2) {
+        box(cx + sx * hw, 8, cz + sz * hw, cx + sx * (hw + 1), 44, cz + sz * (hw + 1), IVORY2);
+      }
+    // 面壁柱
+    for (var f = -1; f <= 1; f += 2) {
+      box(cx + f * hw, 8, cz - hw, cx + f * (hw + 1), 44, cz - hw + 1, IVORY2);
+      box(cx + f * hw, 8, cz + hw, cx + f * (hw + 1), 44, cz + hw - 1, IVORY2);
+      box(cx - hw, 8, cz + f * hw, cx - hw + 1, 44, cz + f * (hw + 1), IVORY2);
+      box(cx + hw, 8, cz + f * hw, cx + hw - 1, 44, cz + f * (hw + 1), IVORY2);
+    }
+    // 下层窗
+    winZ(cx, 16, cz + hw, 3, 15, STONED, GLASS, 1);
+    winZ(cx, 16, cz - hw, 3, 15, STONED, GLASS, -1);
+    winX(cx + hw, 16, cz, 3, 15, STONED, GLASS, 1);
+    winX(cx - hw, 16, cz, 3, 15, STONED, GLASS, -1);
+    cornice(cx, cz, hw, hw, 44, CREAM, STONED);
+    // 钟楼层
+    shell(cx - hw + 1, 47, cz - hw + 1, cx + hw - 1, 66, cz + hw - 1, IVORY2);
+    winZ(cx, 52, cz + hw - 1, 4, 11, STONED, GLASS, 1);
+    winZ(cx, 52, cz - hw + 1, 4, 11, STONED, GLASS, -1);
+    winX(cx + hw - 1, 52, cz, 4, 11, STONED, GLASS, 1);
+    winX(cx - hw + 1, 52, cz, 4, 11, STONED, GLASS, -1);
+    cornice(cx, cz, hw - 1, hw - 1, 64, CREAM, STONED);
+    // 顶台与栏杆
+    shell(cx - hw + 1, 67, cz - hw + 1, cx + hw - 1, 70, cz + hw - 1, IVORY);
+    balustradeRect(cx, cz, hw - 1, hw - 1, 71, IVORY, CREAM);
+    // 塔顶小穹顶
+    drum(cx, 72, cz, 7, 4, IVORY, CREAM, GLASS);
+    corniceRound(cx, cz, 76, 7, CREAM, STONED);
+    dome(cx, 77, cz, 7, 9, COPPER, { ribs: 8, ribC: GOLDL, thick: 2 });
+    lantern(cx, 86, cz, 2, 2, IVORY, GOLDL);
+    finial(cx, 90, cz, 7, IVORY, GOLDL);
+    flagPole(cx, 97, cz, 11, BRONZED, GOLDL, 0);
+  }
+
+  // ── 4.6 侧翼 ────────────────────────────────────
+  function buildWing(s) {
+    var xa = s * 30, xb = s * 56;
+    shell(xa, 8, -40, xb, 26, 14, IVORY2);
+    slab(Math.min(xa, xb), -40, Math.max(xa, xb), 14, 26, IVORY3);
+    // 屋顶栏杆
+    balustradeRect(s * 43, -13, 12, 26, 26, IVORY, CREAM);
+    // 屋顶小穹顶 ×2
+    for (var k = -1; k <= 1; k += 2) {
+      var dz = -13 + k * 17;
+      drum(s * 43, 26, dz, 5, 3, IVORY, CREAM, GLASS);
+      corniceRound(s * 43, dz, 29, 5, CREAM, STONED);
+      dome(s * 43, 30, dz, 5, 6, COPPER, { ribs: 8, ribC: GOLDL, thick: 1 });
+      finial(s * 43, 37, dz, 5, IVORY, GOLDL);
+    }
+    // 外侧拱廊
+    for (var z = -34; z <= 6; z += 10) {
+      archSide(s * 56, 10, z, 4, 1, 3, CREAM, GOLDL);
+      box(s * 56, 8, z + 4, s * 57, 14, z + 5, IVORY2);
+    }
+    // 侧翼窗
+    for (var z2 = -34; z2 <= 6; z2 += 10) {
+      winX(s * 56, 17, z2 + 2, 2, 7, STONED, GLASSW, s);
+    }
+  }
+
+  // ── 4.7 后殿半圆室 ──────────────────────────────
+  function buildApse() {
+    var CZ = -32, R = 22;
+    for (var y = 8; y <= 38; y++) {
+      var seg = 14;
+      for (var x = -R; x <= R; x++)
+        for (var z = -R; z <= 0; z++) {
+          var d2 = x * x + z * z;
+          if (d2 > R * R + R * 0.6) continue;
+          if (d2 < (R - 2) * (R - 2) - R * 0.6) continue;
+          var ang = Math.atan2(z, x) + Math.PI;
+          var k = Math.round(ang / (Math.PI / seg));
+          var cc = IVORY;
+          if (k % 2 === 0) cc = IVORY2;
+          if (y === 37 || y === 8) cc = CREAM;
+          put(x, y, CZ + z, cc);
+        }
+    }
+    // 半穹顶
+    for (var y2 = 0; y2 <= 13; y2++) {
+      var t2 = y2 / 13;
+      var rr2 = Math.round(R * Math.pow(Math.max(0, 1 - t2 * t2), 0.5));
+      if (rr2 <= 0) break;
+      for (var x2 = -rr2; x2 <= rr2; x2++)
+        for (var z2 = -rr2; z2 <= 0; z2++) {
+          var e2 = x2 * x2 + z2 * z2;
+          if (e2 > rr2 * rr2 + rr2 * 0.6) continue;
+          if (e2 < (rr2 - 2) * (rr2 - 2) - rr2 * 0.6) continue;
+          put(x2, 39 + y2, CZ + z2, (y2 % 4 === 0) ? CREAM : IVORY);
+        }
+    }
+    // 后殿顶金饰
+    for (var i = 0; i < 12; i++) {
+      var a2 = i / 12 * Math.PI * 2;
+      volute(Math.round(Math.cos(a2) * 21), 36, CZ + Math.round(Math.sin(a2) * 21), 3, 0.9, CREAM, 'xy', 2);
+    }
+    finial(0, 53, CZ, 9, IVORY, GOLDL);
+  }
+
+  // ── 4.8 广场 / 花园 / 岛缘 ──────────────────────
+  function buildGrounds() {
+    // 前广场方尖碑
+    obelisk(-42, 8, 40, 30, IVORY2, GOLDL);
+    obelisk(42, 8, 40, 30, IVORY2, GOLDL);
+    // 喷泉
+    fountain(-34, 1, 58, 8, IVORY2, WATER, GOLDL);
+    fountain(34, 1, 58, 8, IVORY2, WATER, GOLDL);
+    pick('fountain', -34, 8, 58, 11);
+    pick('fountain', 34, 8, 58, 11);
+    // 广场雕像
+    for (var s = -1; s <= 1; s += 2) {
+      statue(s * 60, 1, 30, 11, IVORY, STONED, GOLDL);
+      statue(s * 60, 1, 6, 11, IVORY, STONED, GOLDL);
+      statue(s * 60, 1, -18, 11, IVORY, STONED, GOLDL);
+    }
+    // 后花园
+    for (var g = -1; g <= 1; g += 2) {
+      hedgeRect(g * 34, -68, 16, 10, 1, 4, HEDGE, HEDGEL);
+      tree(g * 34, 1, -68, 12, 4, LEAF, LEAFD, OCHRED);
+      tree(g * 12, 1, -66, 9, 3, LEAF, LEAFD, OCHRED);
+      fountain(g * 12, 1, -46, 5, IVORY2, WATER, GOLDL);
+    }
+    // 后花园台地
+    slab(-52, -80, 52, -58, 2, STONED);
+    balustrade(-52, -80, 52, -80, 3, IVORY, CREAM);
+    balustrade(-52, -58, -30, -58, 3, IVORY, CREAM);
+    balustrade(30, -58, 52, -58, 3, IVORY, CREAM);
+    balustrade(-52, -80, -52, -58, 3, IVORY, CREAM);
+    balustrade(52, -80, 52, -58, 3, IVORY, CREAM);
+    // 岛缘栏杆（跳过前方台阶区）
+    var n = 96;
+    for (var i = 0; i < n; i++) {
+      var a = i / n * Math.PI * 2;
+      if (Math.sin(a) > 0.55) continue;
+      var x = Math.round(Math.cos(a) * 74), z = Math.round(Math.sin(a) * 74);
+      if (i % 3 === 0) { put(x, 3, z, IVORY); put(x, 4, z, IVORY); }
+      put(x, 2, z, IVORY); put(x, 5, z, CREAM);
+    }
+    // 岛缘望楼
+    for (var s2 = -1; s2 <= 1; s2 += 2) {
+      var bx = s2 * 66, bz = 4;
+      box(bx - 4, 1, bz - 4, bx + 4, 8, bz + 4, IVORY2);
+      balustradeRect(bx, bz, 4, 4, 8, IVORY, CREAM);
+      dome(bx, 8, bz, 4, 5, IVORY, { ribs: 6, ribC: GOLDL, thick: 1 });
+      finial(bx, 13, bz, 5, IVORY, GOLDL);
+    }
+  }
+
+  /* ══════════════════ 5. 中厅 / 副岛 / 天空 ══════════════════ */
+
+  function buildNave() {
+    var NX = 30, NZ0 = -32, NZ1 = 30, Y0 = 8, Y1 = 46;
+    shell(-NX, Y0, NZ0, NX, Y1, NZ1, IVORY);
+    for (var s = -1; s <= 1; s += 2) {
+      for (var z = NZ0 + 8; z <= NZ1 - 12; z += 9) {
+        box(s * NX, Y0, z, s * (NX + 1), Y1 - 4, z + 1, IVORY2);
+        winX(s * NX, 20, z + 5, 2, 14, STONED, GLASS, s);
+        winX(s * NX, 38, z + 4, 1, 4, STONED, GLASSW, s);
+      }
+    }
+    cornice(0, -1, NX, 31, 44, CREAM, STONED);
+    balustrade(-30, -32, 30, -32, 46, IVORY, CREAM);
+    balustrade(-30, -32, -30, 30, 46, IVORY, CREAM);
+    balustrade(30, -32, 30, 30, 46, IVORY, CREAM);
+  }
+
+  // 体素云团（扁平分层，边缘镂空）
+  function cloudPuff(cx, cy, cz, r) {
+    var layers = Math.max(3, Math.round(r * 0.42));
+    for (var i = 0; i < layers; i++) {
+      var t = i / (layers - 1);
+      var yy = cy + Math.round((t - 0.5) * r * 1.25);
+      var rr2 = Math.round(r * (1 - Math.pow(Math.abs(t - 0.5) * 2, 2) * 0.68));
+      if (rr2 < 1) continue;
+      var shellOnly = (i > 0 && i < layers - 2);
+      for (var x = -rr2; x <= rr2; x++)
+        for (var z = -rr2; z <= rr2; z++) {
+          var d2 = x * x + z * z;
+          if (d2 > rr2 * rr2) continue;
+          if (shellOnly && d2 < (rr2 - 2.2) * (rr2 - 2.2)) continue;
+          var n = noise3(cx + x, yy, cz + z);
+          if (n < 0.13) continue;
+          put(cx + x, yy, cz + z, n > 0.74 ? CLOUD : CLOUDS);
+        }
+    }
+  }
+
+  // 倾斜飞桥（可跨高差）
+  function skyRamp(x0, y0, z0, x1, y1, z1, w, c, cRail) {
+    var n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0)));
+    var ux = (x1 - x0) / n, uz = (z1 - z0) / n;
+    for (var i = 0; i <= n; i++) {
+      var t = i / n;
+      var x = Math.round(x0 + ux * i), z = Math.round(z0 + uz * i);
+      var y = Math.round(y0 + (y1 - y0) * t);
+      var sag = Math.round(Math.sin(t * Math.PI) * Math.min(6, n * 0.06));
+      for (var u = -w; u <= w; u++) {
+        var ox = Math.round(-uz * u), oz = Math.round(ux * u);
+        put(x + ox, y + sag, z + oz, c);
+        if (Math.abs(u) === w) {
+          put(x + ox, y + sag + 1, z + oz, cRail);
+          put(x + ox, y + sag + 2, z + oz, cRail);
+          if (i % 6 === 0) put(x + ox, y + sag + 3, z + oz, GOLDL);
+        }
+      }
+      if (i % 7 === 0 && sag > 1) put(x, y + sag - 1, z, c);
+    }
+  }
+
+  // ── 副岛三型
+  function satGarden(s) {
+    var cx = s.x, cy = s.y, cz = s.z;
+    balustradeRing(cx, cz, cy + 2, s.r - 4, IVORY, CREAM);
+    hedgeRect(cx, cz, 14, 14, cy + 2, 3, HEDGE, HEDGEL);
+    // 圆亭
+    for (var i = 0; i < 8; i++) {
+      var a = i / 8 * Math.PI * 2;
+      column(cx + Math.round(Math.cos(a) * 7), cz + Math.round(Math.sin(a) * 7), cy + 2, cy + 15, 3, IVORY2, CREAM, STONED);
+    }
+    disc(cx, cz, cy + 15, 8, IVORY3);
+    ring(cx, cz, cy + 16, 8, 1, CREAM);
+    dome(cx, cy + 17, cz, 8, 7, IVORY, { ribs: 8, ribC: GOLDL, thick: 2 });
+    finial(cx, cy + 24, cz, 6, IVORY, GOLDL);
+    // 树
+    for (var k = 0; k < 12; k++) {
+      var a2 = rnd() * Math.PI * 2, dr = rr(0.45, 0.88) * s.r;
+      tree(cx + Math.round(Math.cos(a2) * dr), cy + 2, cz + Math.round(Math.sin(a2) * dr),
+        ri(7, 13), ri(2, 4), LEAF, LEAFD, OCHRED);
+    }
+    fountain(cx, cy + 2, cz + 20, 4, IVORY2, WATER, GOLDL);
+  }
+
+  function satTemple(s) {
+    var cx = s.x, cy = s.y, cz = s.z;
+    // 台基
+    cyl(cx, cz, cy + 2, cy + 5, 16, IVORY3, 0);
+    ring(cx, cz, cy + 5, 16, 1, CREAM);
+    balustradeRing(cx, cz, cy + 6, 16, IVORY, CREAM);
+    // 一圈柱
+    for (var i = 0; i < 14; i++) {
+      var a = i / 14 * Math.PI * 2;
+      column(cx + Math.round(Math.cos(a) * 12), cz + Math.round(Math.sin(a) * 12), cy + 6, cy + 24, 4, IVORY2, CREAM, STONED);
+    }
+    // 鼓座 + 穹顶
+    cyl(cx, cz, cy + 24, cy + 32, 10, IVORY, 2);
+    for (var w = 0; w < 16; w++) {
+      var aw = w / 16 * Math.PI * 2;
+      put(cx + Math.round(Math.cos(aw) * 10), cy + 28, cz + Math.round(Math.sin(aw) * 10), GLASS);
+    }
+    corniceRound(cx, cz, cy + 32, 10, CREAM, STONED);
+    dome(cx, cy + 33, cz, 11, 10, IVORY, { ribs: 10, ribC: CREAM, thick: 2, bandAt: [4], bandC: GOLDL });
+    lantern(cx, cy + 43, cz, 3, 3, IVORY, GOLDL);
+    finial(cx, cy + 49, cz, 7, IVORY, GOLDL);
+    // 环绕小树
+    for (var k = 0; k < 8; k++) {
+      var a2 = k / 8 * Math.PI * 2 + 0.3;
+      tree(cx + Math.round(Math.cos(a2) * (s.r - 6)), cy + 2, cz + Math.round(Math.sin(a2) * (s.r - 6)),
+        ri(6, 9), 2, LEAF, LEAFD, OCHRED);
+    }
+  }
+
+  function satSpire(s) {
+    var cx = s.x, cy = s.y, cz = s.z;
+    balustradeRing(cx, cz, cy + 2, s.r - 5, IVORY, CREAM);
+    // 高塔
+    shell(cx - 11, cy + 2, cz - 11, cx + 11, cy + 60, cz + 11, IVORY);
+    for (var y = 8; y < 56; y += 8) {
+      box(cx - 12, cy + y, cz - 12, cx + 12, cy + y + 1, cz + 12, IVORY2);
+    }
+    winZ(cx, cy + 16, cz + 11, 4, 18, STONED, GLASS, 1);
+    winZ(cx, cy + 16, cz - 11, 4, 18, STONED, GLASS, -1);
+    winX(cx + 11, cy + 16, cz, 4, 18, STONED, GLASS, 1);
+    winX(cx - 11, cy + 16, cz, 4, 18, STONED, GLASS, -1);
+    cornice(cx, cz, 11, 11, cy + 58, CREAM, STONED);
+    shell(cx - 7, cy + 61, cz - 7, cx + 7, cy + 74, cz + 7, IVORY2);
+    cornice(cx, cz, 7, 7, cy + 72, CREAM, STONED);
+    balustradeRect(cx, cz, 7, 7, cy + 75, IVORY, CREAM);
+    drum(cx, cy + 76, cz, 6, 4, IVORY, CREAM, GLASS);
+    dome(cx, cy + 81, cz, 6, 9, IVORY, { ribs: 8, ribC: GOLDL, thick: 2 });
+    finial(cx, cy + 90, cz, 9, IVORY, GOLDL);
+    flagPole(cx, cy + 99, cz, 10, BRONZED, GOLDL, 0);
+    // 四角小尖塔
+    for (var sx = -1; sx <= 1; sx += 2)
+      for (var sz = -1; sz <= 1; sz += 2) {
+        var px = cx + sx * (s.r - 9), pz = cz + sz * (s.r - 9);
+        box(px - 2, cy + 2, pz - 2, px + 2, cy + 14, pz + 2, IVORY2);
+        dome(px, cy + 14, pz, 3, 4, IVORY, { ribs: 6, ribC: GOLDL, thick: 1 });
+        finial(px, cy + 18, pz, 4, IVORY, GOLDL);
+      }
+  }
+
+  var SATS = [
+    { x: -152, y: -24, z: 54, r: 32, kind: 0 },
+    { x: 154, y: -6, z: 70, r: 27, kind: 1 },
+    { x: 14, y: -56, z: -168, r: 36, kind: 2 }
+  ];
+
+  function buildSatellites() {
+    for (var i = 0; i < SATS.length; i++) {
+      var s = SATS[i];
+      buildIsland(s.x, s.y, s.z, s.r, {
+        depth: Math.round(s.r * 0.62),
+        pave: s.kind === 0 ? GRASS : IVORY3,
+        rim: s.kind === 0 ? GRASSL : STONES
+      });
+      if (s.kind === 0) satGarden(s);
+      else if (s.kind === 1) satTemple(s);
+      else satSpire(s);
+      pick('island', s.x, s.y + 8, s.z, s.r + 8);
+    }
+    // 飞桥
+    skyRamp(-78, 3, 8, -122, -22, 44, 4, IVORY2, CREAM);
+    skyRamp(78, 3, 2, 128, -5, 62, 4, IVORY2, CREAM);
+    skyRamp(4, -1, -80, 14, -54, -134, 4, IVORY2, CREAM);
+  }
+
+  function buildClouds() {
+    // 环城云带：让主城真正「浮」在云上
+    for (var q = 0; q < 34; q++) {
+      var qa = q / 34 * Math.PI * 2 + rr(-0.05, 0.05);
+      var qd = rr(116, 296);
+      cloudPuff(Math.round(Math.cos(qa) * qd), Math.round(rr(-48, -6)), Math.round(Math.sin(qa) * qd), Math.round(rr(13, 31)));
+    }
+    for (var i = 0; i < 30; i++) {
+      var a = rnd() * Math.PI * 2;
+      var d = rr(100, 460);
+      cloudPuff(Math.round(Math.cos(a) * d), Math.round(rr(-130, -40)), Math.round(Math.sin(a) * d), rr(9, 26));
+    }
+    // 岛下围云（贴近主岛）
+    for (var k = 0; k < 12; k++) {
+      var a2 = rnd() * Math.PI * 2, d2 = rr(30, 110);
+      cloudPuff(Math.round(Math.cos(a2) * d2), Math.round(rr(-95, -55)), Math.round(Math.sin(a2) * d2), rr(8, 18));
+    }
+    // 空中碎石
+    for (var j = 0; j < 26; j++) {
+      var a3 = rnd() * Math.PI * 2, d3 = rr(110, 340);
+      var px = Math.round(Math.cos(a3) * d3), pz = Math.round(Math.sin(a3) * d3), py = Math.round(rr(-60, 90));
+      var rr2 = ri(2, 6);
+      for (var x = -rr2; x <= rr2; x++)
+        for (var y = -rr2; y <= rr2; y++)
+          for (var z = -rr2; z <= rr2; z++) {
+            if (x * x + y * y + z * z > rr2 * rr2) continue;
+            put(px + x, py + y, pz + z, noise3(px + x, py + y, pz + z) > 0.6 ? ROCK : ROCKD);
+          }
+    }
+  }
+
+  /* ══════════════════ 6. 可动件（独立网格） ══════════════════ */
+
+  var MOVERS = {};
+
+  function defineMovers() {
+    MOVERS.airship = capture(function () {
+      var W = 15, H = 12, D = 11;
+      for (var x = -W; x <= W; x++)
+        for (var y = -H; y <= H; y++)
+          for (var z = -D; z <= D; z++) {
+            var q = (x / W) * (x / W) + (y / H) * (y / H) + (z / D) * (z / D);
+            if (q > 1 || q < 0.64) continue;
+            put(x, y, z, (Math.floor((y + H) / 3) % 2) ? CRIMSON : GOLDL);
+          }
+      box(-W - 4, -7, 0, -W - 1, 7, 0, CRIMSOND);
+      box(-W - 4, -7, -1, -W - 1, 7, 1, CRIMSOND);
+      box(-7, -23, -4, 7, -16, 4, OCHRED);
+      box(-7, -16, -4, 7, -16, 4, CREAM);
+      for (var wx = -6; wx <= 6; wx += 3) { put(wx, -20, 5, GLOW); put(wx, -20, -5, GLOW); }
+      for (var sx = -6; sx <= 6; sx += 6)
+        for (var sz = -3; sz <= 3; sz += 3) { put(sx, -15, sz, BRONZED); put(sx, -14, sz, BRONZED); }
+      finial(0, H, 0, 5, IVORY, GOLDL);
+    });
+
+    MOVERS.balloon = capture(function () {
+      var W = 8, H2 = 13;
+      for (var x = -W; x <= W; x++)
+        for (var y = -H2; y <= H2; y++)
+          for (var z = -W; z <= W; z++) {
+            var q = (x / W) * (x / W) + (y / H2) * (y / H2) + (z / W) * (z / W);
+            if (q > 1 || q < 0.58) continue;
+            var seg = Math.floor((Math.atan2(z, x) + Math.PI) / (Math.PI * 2) * 14) % 2;
+            put(x, y, z, seg ? CRIMSON : GOLDL);
+          }
+      box(-4, -21, -4, 4, -17, 4, OCHRED);
+      for (var s2 = -3; s2 <= 3; s2 += 3) { put(s2, -16, 3, BRONZED); put(s2, -16, -3, BRONZED); }
+      finial(0, H2, 0, 3, IVORY, GOLDL);
+    });
+
+    MOVERS.dove = capture(function () {
+      put(0, 0, 0, IVORY); put(1, 0, 0, IVORY); put(-1, 0, 0, IVORY);
+      put(2, 0, 0, CREAM); put(2, 1, 0, GOLDL);
+      put(0, 1, 0, CREAM);
+      put(0, 1, 2, IVORY2); put(0, 1, -2, IVORY2);
+      put(0, 0, 1, IVORY2); put(0, 0, -1, IVORY2);
+    });
+  }
+
+  /* ══════════════════ 7. 总装 ══════════════════ */
+
+  function buildAll() {
+    var t0 = performance.now();
+    setBar(18); setMsg('开凿浮空基岩');
+    buildIsland(0, 0, 0, 78, { depth: 86 });
+
+    setBar(26); setMsg('砌筑台基与巨阶');
+    buildPodium();
+
+    setBar(33); setMsg('竖起中殿与巨柱');
+    buildNave();
+    buildFacade();
+
+    setBar(42); setMsg('砌筑鼓座与大穹顶');
+    buildDome();
+
+    setBar(50); setMsg('起造双钟塔');
+    buildTower(-44, 24);
+    buildTower(44, 24);
+
+    setBar(58); setMsg('架设侧翼与飞扶壁');
+    buildWing(-1);
+    buildWing(1);
+    buildApse();
+
+    setBar(66); setMsg('铺陈花园与广场');
+    buildGrounds();
+
+    setBar(74); setMsg('升起副岛与飞桥');
+    buildSatellites();
+
+    setBar(82); setMsg('召唤云海');
+    buildClouds();
+
+    defineMovers();
+    console.log('[CAELUM] voxels=' + TOT + ' picks=' + PICKS.length + ' build=' + Math.round(performance.now() - t0) + 'ms');
+    return TOT;
+  }
+
+  /* ══════════════════ 8. 渲染 ══════════════════ */
+
+  var scene, camera, renderer, clock;
+  var MAT = [], MESHES = [];
+  var SUN, HEMI, AMB;
+  var skyMat, stars;
+  var CLOUDLAYERS = [], FALLS = [];
+  var FX = [];
+  var TT = 0;
+  var DAYT = 0, DAYT_T = 0;
+  var AUTOCAM = false;
+  var RAY = null;
+
+  var CAM = {
+    th: 0.55, ph: 1.17, di: 238,
+    tth: 0.55, tph: 1.17, tdi: 238,
+    vth: 0, vph: 0,
+    drag: false, lx: 0, ly: 0,
+    tx: 0, ty: 43, tz: -4,
+    atx: 0, aty: 43, atz: -4
+  };
+
+  var PS = {
+    day: {
+      sun: 0xffc68e, sunI: 2.35, sunP: [252, 158, 84],
+      amb: 0x8fa6d4, ambI: 0.14,
+      hSky: 0xc6dcff, hGnd: 0x6a563b, hI: 0.21,
+      fog: 0xe6c3a6, fogD: 0.00078,
+      skyTop: 0x173a72, skyMid: 0xa8a8bc, skyBot: 0xffae52,
+      exp: 0.50
+    },
+    night: {
+      sun: 0xa8c0ff, sunI: 0.42, sunP: [-180, 200, -140],
+      amb: 0x30456e, ambI: 0.40,
+      hSky: 0x20365a, hGnd: 0x171a26, hI: 0.52,
+      fog: 0x101d33, fogD: 0.00125,
+      skyTop: 0x050b1a, skyMid: 0x0d1d36, skyBot: 0x26314a,
+      exp: 1.18
+    }
+  };
+
+  var _cA = null, _cB = null, _cOut = null;   // 延迟到 MAIN 内初始化（THREE 尚未加载）
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function mixC(out, a, b, t) {
+    out.setHex(a); _cA.copy(out);
+    out.setHex(b); return _cA.lerp(out, t);
+  }
+
+  // ── 材质
+  function makeMaterials() {
+    MAT = [];
+    for (var i = 0; i < P.length; i++) {
+      var p = P[i], m;
+      var base = new THREE.Color(p.hex);
+      if (p.kind === 'gold') {
+        m = new THREE.MeshStandardMaterial({
+          color: p.hex, metalness: 0.95, roughness: 0.22,
+          emissive: base.clone().multiplyScalar(0.16)
+        });
+      } else if (p.kind === 'water') {
+        m = new THREE.MeshStandardMaterial({
+          color: p.hex, metalness: 0.42, roughness: 0.1,
+          transparent: true, opacity: 0.92,
+          emissive: base.clone().multiplyScalar(0.2)
+        });
+      } else if (p.kind === 'cloud') {
+        m = new THREE.MeshLambertMaterial({
+          color: p.hex, emissive: base.clone().multiplyScalar(0.34)
+        });
+      } else if (p.kind === 'glass') {
+        m = new THREE.MeshStandardMaterial({
+          color: p.hex, metalness: 0.68, roughness: 0.08,
+          emissive: 0x0a1826
+        });
+      } else if (p.kind === 'glow') {
+        m = new THREE.MeshBasicMaterial({ color: p.hex });
+      } else {
+        m = new THREE.MeshStandardMaterial({
+          color: p.hex, metalness: 0.03, roughness: 0.78
+        });
+      }
+      MAT.push(m);
+    }
+  }
+
+  // ── 主城 InstancedMesh
+  function buildMeshes() {
+    var geo = new THREE.BoxGeometry(1, 1, 1);
+    var buckets = new Array(P.length);
+    for (var k = 0; k < KC.length; k++) {
+      var c = KC[k];
+      if (c < 0) continue;
+      if (!buckets[c]) buckets[c] = [];
+      buckets[c].push(k);
+    }
+    for (var ci = 0; ci < buckets.length; ci++) {
+      var idx = buckets[ci];
+      if (!idx || !idx.length) continue;
+      var mesh = new THREE.InstancedMesh(geo, MAT[ci], idx.length);
+      var arr = mesh.instanceMatrix.array, o = 0;
+      for (var j = 0; j < idx.length; j++) {
+        var q = idx[j];
+        arr[o++] = 1; arr[o++] = 0; arr[o++] = 0; arr[o++] = 0;
+        arr[o++] = 0; arr[o++] = 1; arr[o++] = 0; arr[o++] = 0;
+        arr[o++] = 0; arr[o++] = 0; arr[o++] = 1; arr[o++] = 0;
+        arr[o++] = KX[q]; arr[o++] = KY[q]; arr[o++] = KZ[q]; arr[o++] = 1;
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+      var kind = P[ci].kind;
+      mesh.castShadow = (kind !== 'cloud');
+      mesh.receiveShadow = (kind !== 'cloud' && kind !== 'glow');
+      mesh.frustumCulled = false;
+      scene.add(mesh);
+      MESHES.push(mesh);
+    }
+  }
+
+  // ── 通用：把捕获的体素列表变成一组 InstancedMesh
+  function voxToMeshes(list, scale) {
+    scale = scale || 1;
+    var g = new THREE.Group();
+    var geo = new THREE.BoxGeometry(scale, scale, scale);
+    var buckets = {};
+    for (var i = 0; i < list.length; i += 4) {
+      var c = list[i + 3];
+      if (c < 0) continue;
+      if (!buckets[c]) buckets[c] = [];
+      buckets[c].push(i);
+    }
+    for (var key in buckets) {
+      var ci = +key, idx = buckets[key];
+      var mesh = new THREE.InstancedMesh(geo, MAT[ci], idx.length);
+      var arr = mesh.instanceMatrix.array, o = 0;
+      for (var j = 0; j < idx.length; j++) {
+        var q = idx[j];
+        arr[o++] = 1; arr[o++] = 0; arr[o++] = 0; arr[o++] = 0;
+        arr[o++] = 0; arr[o++] = 1; arr[o++] = 0; arr[o++] = 0;
+        arr[o++] = 0; arr[o++] = 0; arr[o++] = 1; arr[o++] = 0;
+        arr[o++] = list[q]; arr[o++] = list[q + 1]; arr[o++] = list[q + 2]; arr[o++] = 1;
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.frustumCulled = false;
+      mesh.castShadow = true;
+      g.add(mesh);
+    }
+    return g;
+  }
+
+  // ── 天空
+  function makeSky() {
+    var geo = new THREE.SphereGeometry(2800, 40, 22);
+    skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false, fog: false,
+      uniforms: {
+        uTop: { value: new THREE.Color(0x2b5c96) },
+        uMid: { value: new THREE.Color(0xa4c4e2) },
+        uBot: { value: new THREE.Color(0xf8e3bd) },
+        uSun: { value: new THREE.Vector3(0.6, 0.5, 0.4) },
+        uGlow: { value: 0.85 }
+      },
+      vertexShader:
+        'varying vec3 vP;' +
+        'void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+      fragmentShader:
+        'uniform vec3 uTop; uniform vec3 uMid; uniform vec3 uBot; uniform vec3 uSun; uniform float uGlow;' +
+        'varying vec3 vP;' +
+        'void main(){' +
+        '  vec3 n = normalize(vP);' +
+        '  float h = n.y * 0.5 + 0.5;' +
+        '  vec3 c = mix(uBot, uMid, smoothstep(0.0, 0.54, h));' +
+        '  c = mix(c, uTop, smoothstep(0.46, 1.0, h));' +
+        '  float d = max(dot(n, normalize(uSun)), 0.0);' +
+        '  c += vec3(1.0,0.86,0.62) * pow(d, 28.0) * uGlow;' +
+        '  c += vec3(1.0,0.9,0.72) * pow(d, 3.0) * 0.14 * uGlow;' +
+        '  gl_FragColor = vec4(c, 1.0);' +
+        '}'
+    });
+    var m = new THREE.Mesh(geo, skyMat);
+    m.frustumCulled = false;
+    m.renderOrder = -10;
+    scene.add(m);
+
+    // 星
+    var N = 900, pos = new Float32Array(N * 3);
+    for (var i = 0; i < N; i++) {
+      var u = rnd() * Math.PI * 2, v = Math.acos(rr(-0.15, 1));
+      var R = 2500;
+      pos[i * 3] = Math.sin(v) * Math.cos(u) * R;
+      pos[i * 3 + 1] = Math.cos(v) * R;
+      pos[i * 3 + 2] = Math.sin(v) * Math.sin(u) * R;
+    }
+    var sg = new THREE.BufferGeometry();
+    sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    var sm = new THREE.PointsMaterial({
+      color: 0xffffff, size: 3.4, sizeAttenuation: false,
+      transparent: true, opacity: 0, depthWrite: false, fog: false
+    });
+    stars = new THREE.Points(sg, sm);
+    stars.frustumCulled = false;
+    scene.add(stars);
+  }
+
+  // ── 云海纹理
+  function makeCloudTex(seedv, soft) {
+    var S = 512;
+    var cv = document.createElement('canvas');
+    cv.width = cv.height = S;
+    var x = cv.getContext('2d');
+    x.clearRect(0, 0, S, S);
+    var old = seed;
+    seed = seedv;
+    for (var i = 0; i < 150; i++) {
+      var px = rnd() * S, py = rnd() * S;
+      var r = rr(18, 78) * (soft ? 1.35 : 1);
+      var a = rr(0.05, 0.16);
+      var g = x.createRadialGradient(px, py, 0, px, py, r);
+      g.addColorStop(0, 'rgba(255,255,255,' + a.toFixed(3) + ')');
+      g.addColorStop(0.55, 'rgba(255,255,255,' + (a * 0.55).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      x.fillStyle = g;
+      x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fill();
+    }
+    seed = old;
+    var t = new THREE.CanvasTexture(cv);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(2.2, 2.2);
+    return t;
+  }
+
+  function makeCloudSea() {
+    var levels = [
+      { y: -32, R: 1400, op: 0.92, sp: 0.0055, col: 0xfbfeff },
+      { y: -62, R: 1800, op: 0.72, sp: 0.0032, col: 0xe6f1fb },
+      { y: -104, R: 2300, op: 0.5, sp: 0.002, col: 0xd2e2f2 }
+    ];
+    for (var i = 0; i < levels.length; i++) {
+      var L = levels[i];
+      var geo = new THREE.PlaneGeometry(L.R * 2, L.R * 2, 1, 1);
+      var tex = makeCloudTex(1000 + i * 77, i > 0);
+      var mat = new THREE.MeshBasicMaterial({
+        map: tex, transparent: true, opacity: L.op,
+        depthWrite: false, color: L.col, fog: true, side: THREE.DoubleSide
+      });
+      var m = new THREE.Mesh(geo, mat);
+      m.rotation.x = -Math.PI / 2;
+      m.position.y = L.y;
+      m.renderOrder = -5 + i;
+      scene.add(m);
+      CLOUDLAYERS.push({ mesh: m, tex: tex, sp: L.sp, baseOp: L.op, y: L.y });
+    }
+  }
+
+  // ── 瀑布
+  function makeFalls() {
+    var spots = [
+      { x: 0, z: 77, ang: 0 },
+      { x: 58, z: 50, ang: 0.72 },
+      { x: -58, z: -50, ang: 3.88 },
+      { x: 62, z: -44, ang: 5.3 }
+    ];
+    for (var i = 0; i < spots.length; i++) {
+      var s = spots[i];
+      var w = 9 + (i % 2) * 3;
+      var h = 190;
+      var geo = new THREE.PlaneGeometry(w, h, 1, 24);
+      var cv = document.createElement('canvas');
+      cv.width = 64; cv.height = 256;
+      var cx2 = cv.getContext('2d');
+      var grd = cx2.createLinearGradient(0, 0, 0, 256);
+      grd.addColorStop(0, 'rgba(228,246,255,0.92)');
+      grd.addColorStop(0.35, 'rgba(190,232,250,0.72)');
+      grd.addColorStop(1, 'rgba(210,240,255,0.0)');
+      cx2.fillStyle = grd; cx2.fillRect(0, 0, 64, 256);
+      for (var k = 0; k < 26; k++) {
+        cx2.fillStyle = 'rgba(255,255,255,' + rr(0.1, 0.5).toFixed(2) + ')';
+        var wx = rnd() * 64, wy = rnd() * 256, ww = rr(1, 4), wh = rr(10, 60);
+        cx2.fillRect(wx, wy, ww, wh);
+      }
+      var tex = new THREE.CanvasTexture(cv);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 2);
+      var mat = new THREE.MeshBasicMaterial({
+        map: tex, transparent: true, opacity: 0.44,
+        depthWrite: false, side: THREE.DoubleSide,
+        blending: THREE.NormalBlending, color: 0x9ed2ea
+      });
+      var m = new THREE.Mesh(geo, mat);
+      m.position.set(s.x, -h / 2 + 3, s.z);
+      m.rotation.y = s.ang;
+      scene.add(m);
+
+      // 底部雾团
+      var pg = new THREE.PlaneGeometry(120, 120);
+      var ptex = makeCloudTex(2000 + i * 31, true);
+      var pmat = new THREE.MeshBasicMaterial({
+        map: ptex, transparent: true, opacity: 0.5,
+        depthWrite: false, color: 0xe8f4ff
+      });
+      var pm = new THREE.Mesh(pg, pmat);
+      pm.rotation.x = -Math.PI / 2;
+      pm.position.set(s.x, -h + 8, s.z);
+      scene.add(pm);
+
+      FALLS.push({ mesh: m, tex: tex, mist: pm, ptex: ptex, x: s.x, z: s.z, h: h, w: w });
+      pick('fall', s.x, -4, s.z, 22);
+    }
+  }
+
+  // ── 环境反射：镀金件需要 envMap 才会真正亮起来
+  function makeEnv() {
+    var c = document.createElement('canvas');
+    c.width = 256; c.height = 128;
+    var g = c.getContext('2d');
+    var grd = g.createLinearGradient(0, 0, 0, 128);
+    grd.addColorStop(0.00, '#4d86c4');
+    grd.addColorStop(0.42, '#a6c6e2');
+    grd.addColorStop(0.54, '#f8e2ba');
+    grd.addColorStop(0.72, '#b09474');
+    grd.addColorStop(1.00, '#5e5245');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 256, 128);
+    var t = new THREE.CanvasTexture(c);
+    t.mapping = THREE.EquirectangularReflectionMapping;
+    var pm = new THREE.PMREMGenerator(renderer);
+    pm.compileEquirectangularShader();
+    var env = pm.fromEquirectangular(t).texture;
+    scene.environment = env;
+    pm.dispose();
+    t.dispose();
+  }
+
+  // 材质微调（必须在 envMap 建立之后）
+  function tuneMaterials() {
+    for (var i = 0; i < P.length; i++) {
+      var m = MAT[i];
+      if (!m) continue;
+      if (P[i].kind === 'gold') {
+        m.metalness = 0.55; m.roughness = 0.30;
+        m.envMapIntensity = 1.15;
+        m.emissive = new THREE.Color(P[i].hex).multiplyScalar(0.55);
+      } else if (P[i].kind === 'glass') {
+        m.metalness = 0.55; m.roughness = 0.08; m.envMapIntensity = 1.5;
+      } else if (P[i].kind === 'stone') {
+        m.envMapIntensity = 0.22;
+      }
+    }
+  }
+
+  // ── 光照
+  function makeLights() {
+    SUN = new THREE.DirectionalLight(0xfff0c8, 2.65);
+    SUN.position.set(235, 285, 105);
+    SUN.castShadow = true;
+    SUN.shadow.mapSize.set(3072, 3072);
+    var sc = SUN.shadow.camera;
+    sc.left = -235; sc.right = 235; sc.top = 235; sc.bottom = -235;
+    sc.near = 40; sc.far = 950;
+    SUN.shadow.bias = -0.00035;
+    SUN.shadow.normalBias = 0.06;
+    scene.add(SUN);
+    scene.add(SUN.target);
+
+    AMB = new THREE.AmbientLight(0x9fc0e0, 0.10);
+    scene.add(AMB);
+
+    HEMI = new THREE.HemisphereLight(0xd6ecff, 0x6b5a40, 0.22);
+    scene.add(HEMI);
+  }
+
+  /* ══════════════════ 9. 可动件 ══════════════════ */
+
+  var AIRS = [], BALS = [], DOVES = [];
+  var FLAGMESH = null, FLAGN = 0, FLAGT = null;
+
+  function makeAirship(group, scale) {
+    var g = voxToMeshes(MOVERS.airship, scale || 1);
+    group.add(g);
+    return g;
+  }
+
+  function initMovers() {
+    // 飞艇
+    var specs = [
+      { rad: 215, h: 128, sp: 0.055, ph: 0.0, tilt: 0.16 },
+      { rad: 265, h: 96, sp: -0.037, ph: 2.2, tilt: -0.1 }
+    ];
+    for (var i = 0; i < specs.length; i++) {
+      var s = specs[i];
+      var grp = new THREE.Group();
+      makeAirship(grp, 1.15);
+      scene.add(grp);
+      AIRS.push({
+        g: grp, rad: s.rad, h: s.h, sp: s.sp, ph: s.ph,
+        tour: false, tourT: 0, rad2: s.rad, h2: s.h
+      });
+      pick('airship', 0, 0, 0, 26);
+    }
+    // 热气球
+    var bsp = [
+      { x: -120, y: 56, z: -78, r: 26, sp: 0.32 },
+      { x: 148, y: 92, z: -40, r: 34, sp: -0.24 },
+      { x: -40, y: 150, z: 150, r: 22, sp: 0.18 }
+    ];
+    for (var j = 0; j < bsp.length; j++) {
+      var b = bsp[j];
+      var bg = new THREE.Group();
+      bg.add(voxToMeshes(MOVERS.balloon, 1.0));
+      scene.add(bg);
+      BALS.push({ g: bg, x: b.x, y: b.y, z: b.z, r: b.r, sp: b.sp, ph: rnd() * 6.28 });
+      pick('balloon', b.x, b.y, b.z, 24);
+    }
+    // 鸽群
+    var dsp = [
+      { cx: -44, cz: 24, cy: 86, rad: 34, n: 11, sp: 0.9, tilt: 0.05 },
+      { cx: 44, cz: 24, cy: 92, rad: 28, n: 9, sp: -1.15, tilt: -0.2 },
+      { cx: 0, cz: -1, cy: 104, rad: 52, n: 13, sp: 0.62, tilt: 0.1 }
+    ];
+    for (var d = 0; d < dsp.length; d++) {
+      var ds = dsp[d];
+      var meshes = voxToMeshes(MOVERS.dove, 1.5);
+      var grp = new THREE.Group();
+      var inst = [];
+      grp.add(meshes);
+      meshes.traverse(function (o) { if (o.isInstancedMesh) inst.push(o); });
+      scene.add(grp);
+      DOVES.push({ g: grp, cx: ds.cx, cy: ds.cy, cz: ds.cz, rad: ds.rad, n: ds.n, sp: ds.sp, inst: inst, tilt: ds.tilt });
+    }
+    // 旗幡
+    initFlags();
+  }
+
+  function initFlags() {
+    if (!FLAGS.length) return;
+    var CW = 13, CH = 9;
+    FLAGN = FLAGS.length;
+    var total = FLAGN * CW * CH;
+    var geo = new THREE.BoxGeometry(0.92, 0.92, 0.92);
+    var mat = new THREE.MeshStandardMaterial({ color: 0x8e2536, metalness: 0.1, roughness: 0.62, side: THREE.DoubleSide });
+    var mesh = new THREE.InstancedMesh(geo, mat, total);
+    mesh.frustumCulled = false;
+    mesh.castShadow = true;
+    // 用 instanceColor 做双色
+    var colAttr = new THREE.InstancedBufferAttribute(new Float32Array(total * 3), 3);
+    var c1 = new THREE.Color(0x8e2536), c2 = new THREE.Color(0xd8a94c), c3 = new THREE.Color(0xf3e8d0);
+    var p = 0;
+    for (var f = 0; f < FLAGN; f++) {
+      for (var i = 0; i < CW; i++) {
+        for (var j = 0; j < CH; j++) {
+          var c = (j === 0 || j === CH - 1 || i === 0 || i === CW - 1) ? c2 : (f % 3 === 0 ? c3 : c1);
+          colAttr.setXYZ(p++, c.r, c.g, c.b);
+        }
+      }
+    }
+    mesh.geometry.setAttribute('instanceColor', colAttr);
+    mat.vertexColors = false;
+    mesh.material = new THREE.MeshStandardMaterial({
+      color: 0xffffff, metalness: 0.15, roughness: 0.6, side: THREE.DoubleSide
+    });
+    scene.add(mesh);
+    FLAGMESH = mesh;
+    FLAGT = { cw: CW, ch: CH };
+    updateFlags(0, 1);
+  }
+
+  function updateFlags(t, wind) {
+    if (!FLAGMESH) return;
+    var CW = 13, CH = 9;
+    var arr = FLAGMESH.instanceMatrix.array;
+    var o = 0;
+    for (var f = 0; f < FLAGS.length; f++) {
+      var F = FLAGS[f];
+      var sway = wind || 1;
+      for (var i = 0; i < CW; i++) {
+        var ph = i * 0.62 - t * 5.4 * sway;
+        var off = Math.sin(ph) * (i * 0.16 + 0.15) * sway;
+        var yo = Math.cos(ph) * (i * 0.055) * sway;
+        for (var j = 0; j < CH; j++) {
+          var sc = 1 - i * 0.012;
+          arr[o++] = sc; arr[o++] = 0; arr[o++] = 0; arr[o++] = 0;
+          arr[o++] = 0; arr[o++] = sc; arr[o++] = 0; arr[o++] = 0;
+          arr[o++] = 0; arr[o++] = 0; arr[o++] = sc; arr[o++] = 0;
+          arr[o++] = F.x + i + 0.5;
+          arr[o++] = F.y + CH - j + yo;
+          arr[o++] = F.z + off;
+          arr[o++] = 1;
+        }
+      }
+    }
+    FLAGMESH.instanceMatrix.needsUpdate = true;
+  }
+
+  /* ══════════════════ 10. 相机 ══════════════════ */
+
+  function initCamera() {
+    camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 1, 6000);
+    applyCamera(true);
+  }
+
+  function applyCamera(force) {
+    var ph = Math.max(0.22, Math.min(1.62, CAM.ph));
+    var sp = Math.sin(ph), cp = Math.cos(ph);
+    var x = CAM.tx + CAM.di * sp * Math.sin(CAM.th);
+    var y = CAM.ty + CAM.di * cp;
+    var z = CAM.tz + CAM.di * sp * Math.cos(CAM.th);
+    camera.position.set(x, y, z);
+    camera.lookAt(CAM.tx, CAM.ty, CAM.tz);
+  }
+
+  function initInput() {
+    var el = renderer.domElement;
+    var pointers = {};
+    var pinchD = 0;
+
+    function down(e) {
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      if (Object.keys(pointers).length === 1) {
+        CAM.drag = true; CAM.lx = e.clientX; CAM.ly = e.clientY;
+        CAM.vth = 0; CAM.vph = 0;
+      }
+      el.setPointerCapture && el.setPointerCapture(e.pointerId);
+    }
+    function move(e) {
+      if (!pointers[e.pointerId]) return;
+      pointers[e.pointerId].x = e.clientX;
+      pointers[e.pointerId].y = e.clientY;
+      var ids = Object.keys(pointers);
+      if (ids.length >= 2) {
+        var a = pointers[ids[0]], b = pointers[ids[1]];
+        var d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinchD > 0) CAM.tdi = Math.max(90, Math.min(900, CAM.tdi * (pinchD / Math.max(1, d))));
+        pinchD = d;
+        return;
+      }
+      if (!CAM.drag) return;
+      var dx = e.clientX - CAM.lx, dy = e.clientY - CAM.ly;
+      CAM.lx = e.clientX; CAM.ly = e.clientY;
+      CAM.tth -= dx * 0.0052;
+      CAM.tph -= dy * 0.0042;
+      CAM.tph = Math.max(0.22, Math.min(1.62, CAM.tph));
+      CAM.vth = -dx * 0.0052;
+      CAM.vph = -dy * 0.0042;
+    }
+    function up(e) {
+      delete pointers[e.pointerId];
+      if (!Object.keys(pointers).length) { CAM.drag = false; pinchD = 0; }
+    }
+    el.addEventListener('pointerdown', down);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    el.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      CAM.tdi = Math.max(90, Math.min(900, CAM.tdi * (1 + Math.sign(e.deltaY) * Math.min(0.16, Math.abs(e.deltaY) * 0.0012))));
+    }, { passive: false });
+    el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+    // 点击拾取
+    el.addEventListener('click', function (e) {
+      doPick(e.clientX, e.clientY);
+    });
+    window.__CAE.pick = doPick;
+  }
+
+  function updateCamera(dt) {
+    if (!CAM.drag) {
+      CAM.tth += CAM.vth;
+      CAM.tph = Math.max(0.22, Math.min(1.62, CAM.tph + CAM.vph));
+      CAM.vth *= 0.93; CAM.vph *= 0.93;
+    }
+    if (AUTOCAM) CAM.tth += dt * 0.085;
+    CAM.th += (CAM.tth - CAM.th) * Math.min(1, dt * 9);
+    CAM.ph += (CAM.tph - CAM.ph) * Math.min(1, dt * 9);
+    CAM.di += (CAM.tdi - CAM.di) * Math.min(1, dt * 6);
+    CAM.tx += (CAM.atx - CAM.tx) * Math.min(1, dt * 5);
+    CAM.ty += (CAM.aty - CAM.ty) * Math.min(1, dt * 5);
+    CAM.tz += (CAM.atz - CAM.tz) * Math.min(1, dt * 5);
+    applyCamera();
+  }
+
+  /* ══════════════════ 11. 拾取与反馈 ══════════════════ */
+
+  function doPick(cx, cy) {
+    var ndc = new THREE.Vector2((cx / window.innerWidth) * 2 - 1, -(cy / window.innerHeight) * 2 + 1);
+    var ray = new THREE.Raycaster();
+    ray.setFromCamera(ndc, camera);
+    var best = null, bestD = 1e9;
+
+    for (var i = 0; i < PICKS.length; i++) {
+      var p = PICKS[i];
+      var px = p.x, py = p.y, pz = p.z;
+      if (p.t === 'airship') {
+        var a = AIRS[0];
+        px = a.g.position.x; py = a.g.position.y; pz = a.g.position.z;
+      } else if (p.t === 'balloon') {
+        var b = BALS[i % BALS.length];
+        if (b) { px = b.g.position.x; py = b.g.position.y; pz = b.g.position.z; }
+      }
+      var d2 = ray.ray.distanceSqToPoint(new THREE.Vector3(px, py, pz));
+      if (d2 < p.r * p.r && d2 < bestD) { bestD = d2; best = p; }
+    }
+    if (!best) return;
+    react(best);
+  }
+
+  function toast(msg) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('on');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.classList.remove('on'); }, 1900);
+  }
+
+  function react(p) {
+    if (p.t === 'dome') {
+      addPulse(0, 68, -1, 70, 0xffe6a0);
+      addPulse(0, 88, -1, 30, 0xfff4d0);
+      GOLD_FLASH = 1;
+      toast('金穹回响 · 钟声震动');
+    } else if (p.t === 'fountain') {
+      burst(p.x, 12, p.z, 90, 0xcfeeff, 1);
+      toast('喷泉苏醒');
+    } else if (p.t === 'airship') {
+      toggleAirship();
+      toast('飞艇启航 · 开始巡游');
+    } else if (p.t === 'balloon') {
+      toast('热气球升空');
+      for (var i = 0; i < BALS.length; i++) BALS[i].boost = 1;
+    } else if (p.t === 'fall') {
+      burst(p.x, -12, p.z, 120, 0xffffff, 1.4);
+      toast('瀑布炸裂成雾');
+    } else if (p.t === 'flag') {
+      FLAGBOOST = 2.6;
+      toast('旗幡猎猎');
+    } else if (p.t === 'island') {
+      p.up = !p.up;
+      toast(p.up ? '浮岛升起' : '浮岛降下');
+    }
+  }
+
+  var GOLD_FLASH = 0;
+  var FLAGBOOST = 0;
+
+  function addPulse(x, y, z, r, col) {
+    var geo = new THREE.SphereGeometry(1, 20, 14);
+    var mat = new THREE.MeshBasicMaterial({
+      color: col, transparent: true, opacity: 0.85,
+      wireframe: true, depthWrite: false, blending: THREE.AdditiveBlending
+    });
+    var m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    m.scale.setScalar(1);
+    scene.add(m);
+    FX.push({ kind: 'pulse', o: m, t: 0, dur: 1.5, r: r });
+  }
+
+  function burst(x, y, z, n, col, spd) {
+    var pos = new Float32Array(n * 3);
+    var vel = new Float32Array(n * 3);
+    for (var i = 0; i < n; i++) {
+      pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+      var a = rnd() * Math.PI * 2, e = rr(0.25, 1.1);
+      var sp = rr(0.6, 1.6) * (spd || 1) * 26;
+      vel[i * 3] = Math.cos(a) * Math.cos(e) * sp;
+      vel[i * 3 + 1] = Math.sin(e) * sp * 1.35;
+      vel[i * 3 + 2] = Math.sin(a) * Math.cos(e) * sp;
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    var m = new THREE.PointsMaterial({
+      color: col, size: 2.4, transparent: true, opacity: 0.95,
+      depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true
+    });
+    var pts = new THREE.Points(g, m);
+    pts.frustumCulled = false;
+    scene.add(pts);
+    FX.push({ kind: 'burst', o: pts, t: 0, dur: 2.2, vel: vel, g: g });
+  }
+
+  var AIRTOUR = false;
+  function toggleAirship() {
+    AIRTOUR = !AIRTOUR;
+    for (var i = 0; i < AIRS.length; i++) AIRS[i].tour = AIRTOUR;
+  }
+
+  function updateFX(dt) {
+    for (var i = FX.length - 1; i >= 0; i--) {
+      var f = FX[i];
+      f.t += dt;
+      var k = f.t / f.dur;
+      if (k >= 1) {
+        scene.remove(f.o);
+        if (f.o.geometry) f.o.geometry.dispose();
+        if (f.o.material) f.o.material.dispose();
+        FX.splice(i, 1);
+        continue;
+      }
+      if (f.kind === 'pulse') {
+        f.o.scale.setScalar(1 + k * f.r);
+        f.o.material.opacity = 0.85 * (1 - k) * (1 - k);
+        f.o.rotation.y += dt * 0.6;
+        f.o.rotation.x += dt * 0.35;
+      } else if (f.kind === 'burst') {
+        var pos = f.g.attributes.position.array;
+        for (var j = 0; j < pos.length; j += 3) {
+          pos[j] += f.vel[j] * dt;
+          pos[j + 1] += f.vel[j + 1] * dt;
+          pos[j + 2] += f.vel[j + 2] * dt;
+          f.vel[j] *= 0.965; f.vel[j + 1] = f.vel[j + 1] * 0.965 - 26 * dt; f.vel[j + 2] *= 0.965;
+        }
+        f.g.attributes.position.needsUpdate = true;
+        f.o.material.opacity = 0.95 * (1 - k);
+      }
+    }
+  }
+
+  /* ══════════════════ 12. 更新循环 ══════════════════ */
+
+  function updateDayNight(dt) {
+    DAYT += (DAYT_T - DAYT) * Math.min(1, dt * 2.2);
+    var t = DAYT;
+    var d = PS.day, n = PS.night;
+    SUN.color.copy(mixC(_cOut, d.sun, n.sun, t));
+    SUN.intensity = lerp(d.sunI, n.sunI, t);
+    SUN.position.set(lerp(d.sunP[0], n.sunP[0], t), lerp(d.sunP[1], n.sunP[1], t), lerp(d.sunP[2], n.sunP[2], t));
+    AMB.color.copy(mixC(_cOut, d.amb, n.amb, t));
+    AMB.intensity = lerp(d.ambI, n.ambI, t);
+    HEMI.color.copy(mixC(_cOut, d.hSky, n.hSky, t));
+    HEMI.groundColor.copy(mixC(_cOut, d.hGnd, n.hGnd, t));
+    HEMI.intensity = lerp(d.hI, n.hI, t);
+    scene.fog.color.copy(mixC(_cOut, d.fog, n.fog, t));
+    scene.fog.density = lerp(d.fogD, n.fogD, t);
+    skyMat.uniforms.uTop.value.copy(mixC(_cOut, d.skyTop, n.skyTop, t));
+    skyMat.uniforms.uMid.value.copy(mixC(_cOut, d.skyMid, n.skyMid, t));
+    skyMat.uniforms.uBot.value.copy(mixC(_cOut, d.skyBot, n.skyBot, t));
+    skyMat.uniforms.uSun.value.copy(SUN.position).normalize();
+    skyMat.uniforms.uGlow.value = lerp(0.95, 0.35, t);
+    renderer.toneMappingExposure = lerp(d.exp, n.exp, t);
+    if (stars) stars.material.opacity = Math.max(0, (t - 0.45) * 1.9);
+    if (GOLD_FLASH > 0) {
+      GOLD_FLASH = Math.max(0, GOLD_FLASH - dt * 1.5);
+      var gm = MAT[GOLD], gl = MAT[GOLDL];
+      var f = GOLD_FLASH;
+      if (gm && gm.emissive) gm.emissive.setRGB(0.35 * f + 0.08, 0.26 * f + 0.05, 0.06 * f + 0.01);
+      if (gl && gl.emissive) gl.emissive.setRGB(0.5 * f + 0.12, 0.4 * f + 0.08, 0.12 * f + 0.02);
+    }
+  }
+
+  function updateClouds(dt) {
+    for (var i = 0; i < CLOUDLAYERS.length; i++) {
+      var L = CLOUDLAYERS[i];
+      L.tex.offset.x += L.sp * dt;
+      L.tex.offset.y += L.sp * 0.42 * dt;
+      L.mesh.position.y = L.y + Math.sin(TT * 0.24 + i * 1.7) * 2.2;
+      if (STORM > 0) L.mesh.position.y += Math.sin(TT * 1.3 + i) * 6 * STORM;
+    }
+  }
+  var STORM = 0;
+
+  function updateAirship(dt) {
+    for (var i = 0; i < AIRS.length; i++) {
+      var a = AIRS[i];
+      a.ph += dt * a.sp;
+      var rad = a.rad, h = a.h;
+      if (a.tour) {
+        a.tourT += dt * 0.25;
+        rad = a.rad + Math.sin(a.tourT) * 62;
+        h = a.h + Math.sin(a.tourT * 1.7) * 34;
+      }
+      var x = Math.cos(a.ph) * rad;
+      var z = Math.sin(a.ph) * rad * 0.82;
+      var y = h + Math.sin(a.ph * 2.3 + i) * 12;
+      a.g.position.set(x, y, z);
+      var nx = Math.cos(a.ph + 0.02 * Math.sign(a.sp)) * rad;
+      var nz = Math.sin(a.ph + 0.02 * Math.sign(a.sp)) * rad * 0.82;
+      a.g.rotation.y = Math.atan2(nx - x, nz - z);
+      a.g.rotation.z = Math.sin(a.ph * 1.3) * 0.05;
+    }
+  }
+
+  function updateBalloons(dt) {
+    for (var i = 0; i < BALS.length; i++) {
+      var b = BALS[i];
+      if (b.boost > 0) b.boost = Math.max(0, b.boost - dt * 0.4);
+      var bo = (b.boost || 0) * 34;
+      var a = TT * b.sp + b.ph;
+      b.g.position.set(
+        b.x + Math.cos(a) * b.r,
+        b.y + bo + Math.sin(a * 1.6) * 7,
+        b.z + Math.sin(a) * b.r * 0.8
+      );
+      b.g.rotation.y = a;
+      b.g.rotation.z = Math.sin(a * 1.1) * 0.06;
+    }
+  }
+
+  function updateDoves(dt) {
+    for (var i = 0; i < DOVES.length; i++) {
+      var d = DOVES[i];
+      var a = TT * d.sp;
+      d.g.position.set(
+        d.cx + Math.cos(a) * d.rad,
+        d.cy + Math.sin(a * 2.3) * 7,
+        d.cz + Math.sin(a) * d.rad
+      );
+      d.g.rotation.y = -a + Math.PI / 2;
+      d.g.rotation.z = d.tilt;
+      // 翅膀拍打
+      for (var k = 0; k < d.inst.length; k++) {
+        var im = d.inst[k];
+        im.rotation.z = Math.sin(TT * 7 + i) * 0.06;
+      }
+    }
+  }
+
+  function updateFalls(dt) {
+    for (var i = 0; i < FALLS.length; i++) {
+      var f = FALLS[i];
+      f.tex.offset.y -= dt * 0.9;
+      f.ptex.offset.x += dt * 0.012;
+      f.mist.material.opacity = 0.42 + Math.sin(TT * 0.9 + i) * 0.08;
+    }
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    var dt = Math.min(0.05, clock.getDelta());
+    TT += dt;
+    if (FLAGBOOST > 0) FLAGBOOST = Math.max(0, FLAGBOOST - dt * 0.5);
+    if (STORM > 0) STORM = Math.max(0, STORM - dt * 0.28);
+    updateCamera(dt);
+    updateDayNight(dt);
+    updateClouds(dt);
+    updateAirship(dt);
+    updateBalloons(dt);
+    updateDoves(dt);
+    updateFalls(dt);
+    updateFX(dt);
+    updateFlags(TT, 1 + FLAGBOOST);
+    renderer.render(scene, camera);
+  }
+
+  /* ══════════════════ 13. 启动 ══════════════════ */
+
+  var FPS_T = 0, FPS_N = 0, FPS_V = 0;
+
+  function initUI() {
+    var btns = document.querySelectorAll('#dock .btn');
+    for (var i = 0; i < btns.length; i++) {
+      (function (b) {
+        b.addEventListener('click', function () {
+          var act = b.getAttribute('data-act');
+          if (act === 'day') {
+            DAYT_T = DAYT_T > 0.5 ? 0 : 1;
+            b.classList.toggle('on', DAYT_T > 0.5);
+            toast(DAYT_T > 0.5 ? '夜幕降临 · 灯火初上' : '晨光复苏');
+          } else if (act === 'orbit') {
+            AUTOCAM = !AUTOCAM;
+            b.classList.toggle('on', AUTOCAM);
+          } else if (act === 'storm') {
+            STORM = 1;
+            toast('云海翻涌');
+          } else if (act === 'reset') {
+            CAM.tth = 0.62; CAM.tph = 1.14; CAM.tdi = 348;
+            CAM.atx = 0; CAM.aty = 34; CAM.atz = -4;
+            AUTOCAM = false;
+            var ob = document.querySelector('[data-act="orbit"]');
+            if (ob) ob.classList.remove('on');
+          }
+        });
+      })(btns[i]);
+    }
+    window.addEventListener('keydown', function (e) {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        var b = document.querySelector('[data-act="day"]');
+        if (b) b.click();
+      } else if (e.key === 'r' || e.key === 'R') {
+        var r = document.querySelector('[data-act="reset"]');
+        if (r) r.click();
+      }
+    });
+    window.addEventListener('resize', function () {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  }
+
+  function MAIN() {
+    var bar = window.__CAE.setBar, msg = window.__CAE.setMsg;
+
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0xc3d8ea, 0.00082);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.60;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    clock = new THREE.Clock();
+    _cA = new THREE.Color(); _cB = new THREE.Color(); _cOut = new THREE.Color();
+    makeMaterials();
+    buildAll();
+    bar(90); msg('组装体素');
+    buildMeshes();
+    makeSky();
+    makeEnv();
+    tuneMaterials();
+    makeCloudSea();
+    makeFalls();
+    makeLights();
+    initMovers();
+    initCamera();
+    initInput();
+    initUI();
+    bar(100); msg('初见');
+
+    var sv = document.getElementById('sv'), sd = document.getElementById('sd'), sf = document.getElementById('sf');
+    if (sv) sv.textContent = TOT.toLocaleString('en-US');
+    if (sd) sd.textContent = MESHES.length;
+
+    setTimeout(function () {
+      var l = document.getElementById('loader');
+      if (l) l.classList.add('done');
+    }, 260);
+
+    animate();
+
+    // FPS
+    var last = performance.now(), frames = 0;
+    setInterval(function () {
+      var now = performance.now();
+      frames++;
+      var el = now - last;
+      if (el > 900) {
+        FPS_V = Math.round(frames * 1000 / el);
+        if (sf) sf.textContent = FPS_V;
+        frames = 0; last = now;
+      }
+    }, 250);
+  }
+
+  window.__CAE = window.__CAE || {};
+  window.__CAE.MAIN = MAIN;
+
+  tryNext();
+})();
+</script>
+</body>
+</html>
