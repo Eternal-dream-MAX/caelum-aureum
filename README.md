@@ -5,6 +5,18 @@
 
 ---
 
+## 在线访问（分享链接）
+
+**https://eternal-dream-max.github.io/caelum-aureum/**
+
+GitHub Pages 托管，永久有效，桌面 / 手机浏览器直接打开即可，无需下载。
+
+- 仓库：https://github.com/Eternal-dream-MAX/caelum-aureum
+- 发布副本位于 `.publish/`（`index.html` 是 `CaelumAureum.html` 的拷贝，作为 Pages 入口）
+- 更新线上版本：`cp CaelumAureum.html .publish/index.html && cd .publish && git add -A && git commit -m update && git push`
+
+---
+
 ## 打开
 
 ```
