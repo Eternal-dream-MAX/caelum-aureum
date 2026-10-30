@@ -2236,7 +2236,7 @@
   function updateFalls(dt) {
     for (var i = 0; i < FALLS.length; i++) {
       var f = FALLS[i];
-      f.tex.offset.y -= dt * 0.9;
+      f.tex.offset.y += dt * 0.9;      // offset.y 递增 = 纹理向下滚 = 水往下落
       f.ptex.offset.x += dt * 0.012;
       f.mist.material.opacity = 0.42 + Math.sin(TT * 0.9 + i) * 0.08;
     }
